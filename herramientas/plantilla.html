@@ -1,0 +1,587 @@
+<title>Terminal Cascada</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+/* Terminal de trading de una sola pantalla: grilla de paneles con borde fino, negro + ámbar, todo en monoespaciada. */
+:root {
+  --bg: #050505; --panel: #0d0c0a; --line: #24211c; --dim: #7d776c; --fg: #e9e4da;
+  --amber: #ff9f1a; --up: #2fd47a; --down: #ff4d4d; --blue: #5cb8ff;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --cond: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font: 13px/1.45 var(--mono); }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 28px; max-width: 1500px; margin: 0 auto; display: grid; gap: 10px; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.logo { background: var(--amber); color: #000; font-weight: 600; padding: 3px 7px; }
+.brand { font-weight: 600; letter-spacing: .08em; }
+.chip { border: 1px solid var(--line); color: var(--dim); padding: 2px 8px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.chip.warn { border-color: var(--amber); color: var(--amber); }
+.spacer { flex: 1; }
+h1 { margin: 0; font: 600 15px var(--mono); color: var(--amber); letter-spacing: .1em; }
+.sub { color: var(--dim); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.grid { display: grid; gap: 10px; }
+.kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.row3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.row2 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+@media (max-width: 900px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
+.p { background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; min-width: 0; }
+.p h2 { margin: 0 0 10px; font: 600 11px var(--mono); color: var(--amber); letter-spacing: .1em; text-transform: uppercase; display: flex; justify-content: space-between; gap: 8px; }
+.p h2 span { color: var(--dim); font-weight: 400; }
+.lbl { color: var(--dim); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; }
+.big { font: 600 26px/1.15 var(--cond); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.small { color: var(--dim); font-size: 11px; margin-top: 4px; }
+.up { color: var(--up); } .down { color: var(--down); } .am { color: var(--amber); }
+.kflex { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.wl { height: 6px; display: flex; margin-top: 10px; }
+svg { display: block; width: 100%; height: auto; max-width: 100%; }
+svg text { font-family: var(--mono); font-size: 10px; fill: var(--dim); }
+.legend { display: flex; gap: 14px; font-size: 11px; color: var(--dim); margin-top: 6px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 2px; vertical-align: middle; margin-right: 5px; }
+.tbl { max-height: 330px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { position: sticky; top: 0; background: var(--panel); text-align: left; color: var(--dim); font-weight: 400; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; padding: 6px 6px; border-bottom: 1px solid var(--line); }
+td { padding: 6px 6px; border-bottom: 1px solid #16140f; white-space: nowrap; }
+td.r, th.r { text-align: right; }
+.tag { font-size: 10px; border: 1px solid var(--line); color: var(--dim); padding: 0 4px; margin-left: 6px; }
+.verdict { border: 1px solid var(--amber); padding: 10px 12px; color: var(--fg); }
+.verdict b { color: var(--amber); }
+ul.ins { list-style: none; margin: 0; padding: 0; }
+ul.ins li { padding: 7px 0 7px 16px; border-bottom: 1px solid #16140f; position: relative; }
+ul.ins li::before { content: "›"; position: absolute; left: 0; color: var(--amber); }
+.fbar { display: grid; grid-template-columns: 92px minmax(0,1fr) 64px; gap: 8px; align-items: center; padding: 4px 0; }
+.track { position: relative; height: 10px; background: #15130f; }
+.track .mid { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--dim); }
+.track .v { position: absolute; top: 0; bottom: 0; }
+.dots { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.dots span { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--dim); }
+.dots span.pend { border-style: dashed; border-color: var(--amber); }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs a { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); color: var(--fg); text-decoration: none; padding: 5px 10px; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; }
+.tabs a b { background: #2b2418; color: var(--amber); padding: 0 5px; font-weight: 600; }
+.tabs a:hover { border-color: var(--amber); }
+.tabs a[aria-current="page"] { background: var(--amber); color: #000; border-color: var(--amber); }
+.tabs a[aria-current="page"] b { background: #000; }
+.tabs a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+section.tab { display: grid; gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { border: 1px solid #4a2626; color: var(--fg); padding: 2px 7px; font-size: 12px; }
+.chips span small { color: var(--dim); margin-left: 4px; }
+.seg { display: inline-flex; border: 1px solid var(--line); }
+.seg button { background: none; border: 0; color: var(--dim); font: 11px var(--mono); padding: 3px 9px; cursor: pointer; letter-spacing: .06em; text-transform: uppercase; }
+.seg button[aria-pressed="true"] { background: var(--amber); color: #000; }
+.seg button:focus-visible { outline: 2px solid var(--amber); }
+.row4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.note { color: var(--dim); font-size: 11.5px; margin-top: 8px; }
+section.tab[hidden] { display: none; }
+.tk { background: none; border: 0; padding: 0; font: 600 inherit var(--mono); font-weight: 600; color: var(--fg); cursor: pointer; border-bottom: 1px dotted var(--dim); }
+.tk:hover, .tk:focus-visible { color: var(--amber); border-bottom-color: var(--amber); outline: none; }
+.chips .tk { border: 0; font-weight: 500; }
+.tape { display: flex; gap: 0; overflow-x: auto; border: 1px solid var(--line); background: var(--panel); scrollbar-width: thin; }
+.tape .q { flex: 0 0 auto; display: flex; gap: 8px; align-items: baseline; padding: 6px 12px; border-right: 1px solid var(--line); font-variant-numeric: tabular-nums; background: none; border-top: 0; border-bottom: 0; border-left: 0; color: var(--fg); font: 12px var(--mono); cursor: pointer; }
+.tape .q:hover { background: #17140f; }
+.tape .q b { color: var(--fg); }
+.tape .q.flash { animation: flash .9s ease; }
+@keyframes flash { from { background: #3a2a10; } to { background: none; } }
+.live { display: inline-flex; align-items: center; gap: 6px; }
+.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); }
+.live.on { color: var(--up); border-color: var(--up); }
+.live.on i { background: var(--up); animation: blink 1.4s infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+.drawer { box-sizing: border-box; position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); background: var(--panel); border-left: 1px solid var(--amber); z-index: 50; overflow-y: auto; padding: calc(14px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) 16px; box-shadow: -20px 0 40px #000a; display: grid; gap: 12px; align-content: start; }
+.drawer .x { background: none; border: 1px solid var(--line); color: var(--fg); font: 12px var(--mono); padding: 4px 10px; cursor: pointer; }
+.drawer .x:hover { border-color: var(--amber); color: var(--amber); }
+.ranges { display: inline-flex; border: 1px solid var(--line); }
+.ranges button { background: none; border: 0; color: var(--dim); font: 11px var(--mono); padding: 3px 9px; cursor: pointer; }
+.ranges button[aria-pressed="true"] { background: var(--amber); color: #000; }
+.tip { position: absolute; pointer-events: none; background: #000; border: 1px solid var(--amber); padding: 4px 8px; font-size: 11px; white-space: nowrap; z-index: 5; font-variant-numeric: tabular-nums; }
+.chart { position: relative; }
+.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.kv > div { border: 1px solid var(--line); padding: 8px; }
+footer { color: var(--dim); font-size: 11px; border-top: 1px solid var(--line); padding-top: 10px; }
+@media (prefers-reduced-motion: no-preference) { .p { animation: in .35s ease both; } @keyframes in { from { opacity: .4; } to { opacity: 1; } } }
+</style>
+
+<div class="wrap">
+  <div class="bar">
+    <span class="logo">TC</span><span class="brand">TERMINAL CASCADA</span>
+    <span class="chip warn">Paper trading · sin dinero real</span>
+    <span class="spacer"></span>
+    
+    <span class="chip live" id="liveChip"><i></i><span id="liveTxt">Cierre</span></span>
+    <span class="chip" id="act"></span>
+  </div>
+
+
+  <div class="tape" id="tape" aria-label="Cotizaciones"></div>
+
+  <nav class="tabs" aria-label="Secciones">
+    <a href="#resumen"><b>1</b>Resumen</a>
+    <a href="#small"><b>2</b>Small caps</a>
+    <a href="#sp500"><b>3</b>S&amp;P 500</a>
+    <a href="#balances"><b>4</b>Balances</a>
+    <a href="#backtest"><b>5</b>Backtest</a>
+  </nav>
+
+  <section class="tab" id="t-resumen">
+    <div class="kflex" style="flex-wrap:wrap"><h1>RESUMEN</h1><span class="sub">Lo que dice el modelo esta semana en cada mercado</span></div>
+    <div class="grid kpis" id="resKpis"></div>
+    <div class="grid row3">
+      <div class="p"><h2>Small caps: a evitar <span id="resSmallTag"></span></h2><div class="chips" id="resEvitar"></div><div class="note">La regla saca las que tienen mucha cobertura, salto de noticias o ventas grandes de directivos.</div></div>
+      <div class="p"><h2>S&amp;P 500: las 10 de mejor puntaje <span id="resSpTag"></span></h2><div class="tbl" id="resTop"></div></div>
+      <div class="p"><h2>Balances esta semana <span id="resBalTag"></span></h2><div class="tbl" id="resBal"></div></div>
+    </div>
+    <div class="p"><h2>Qué está probado y qué no</h2><ul class="ins" id="resProbado"></ul></div>
+  </section>
+
+  <section class="tab" id="t-small">
+    <div class="kflex" style="flex-wrap:wrap"><h1>SMALL CAPS</h1><span class="sub" id="smallSub"></span></div>
+    <div class="grid kpis" id="smallKpis"></div>
+    <div class="grid row2">
+      <div class="p"><h2>Acciones a evitar <span id="smallEvTag"></span></h2><div class="chips" id="smallEvitar"></div></div>
+      <div class="p"><h2>Por qué se evitan</h2><div id="smallMotivos"></div></div>
+    </div>
+    <div class="grid row2">
+      <div class="p"><h2>¿Funciona la regla? Último año <span>lo que queda menos lo evitado, a 4 semanas</span></h2><div id="smallHist"></div>
+        <div class="legend"><span><i style="background:var(--up)"></i>La regla ganó</span><span><i style="background:var(--down)"></i>La regla perdió</span></div></div>
+      <div class="p"><h2>Prueba hacia adelante <span>desde 28/10/26</span></h2><div id="regla"></div></div>
+    </div>
+    <div class="p"><h2>Qué señales sirven y cuáles no <span>diferencia por semana, con margen</span></h2><div id="senales"></div>
+      <div class="note">Una barra que cruza la línea del medio no se distingue del azar.</div></div>
+  </section>
+
+  <section class="tab" id="t-sp500">
+    <div class="kflex" style="flex-wrap:wrap"><h1>S&amp;P 500</h1><span class="sub" id="spSub"></span></div>
+    <div class="grid kpis" id="spKpis"></div>
+    <div class="p"><h2>Elección de la semana: las 10 de mejor puntaje <span>rango esperado a 1 mes</span></h2><div class="tbl" style="max-height:none" id="spTop"></div>
+      <div class="note">Piso y techo: donde debería quedar el precio en un mes 2 de cada 3 veces. "Balance" marca si presenta resultados antes; ahí el rango se rompe más seguido.</div></div>
+    <div class="grid row2">
+      <div class="p"><h2>Dónde se caen las demás</h2><div id="spEmbudo"></div></div>
+      <div class="p"><h2>¿Qué filtros sirvieron? <span>pasan menos resto, 1 mes</span></h2><div id="spFiltros"></div>
+        <div class="note">10 meses de prueba (ene–oct 2026). Ninguno es estadísticamente firme todavía.</div></div>
+    </div>
+  </section>
+
+  <section class="tab" id="t-balances">
+    <div class="kflex" style="flex-wrap:wrap"><h1>BALANCES</h1><span class="sub">Próximas dos semanas · probabilidad de superar lo esperado según su historial</span></div>
+    <div class="grid row4" id="balKpis"></div>
+    <div class="grid row2">
+      <div class="p"><h2>Calendario <span class="seg" id="balSeg"><button type="button" id="balSp" aria-pressed="true">S&amp;P 500</button><button type="button" id="balSmall" aria-pressed="false">Small caps</button></span></h2><div class="tbl" style="max-height:460px" id="balTabla"></div></div>
+      <div class="p"><h2>Superar según su historial <span id="balProbTag"></span></h2><div id="balProb"></div>
+        <div class="note">Superar lo esperado no anticipa si la acción sube: eso salió parejo en la prueba. Sirve para saber que se va a mover más.</div></div>
+    </div>
+  </section>
+
+  <section class="tab" id="t-backtest">
+  <div class="kflex" style="flex-wrap:wrap">
+    <h1>BACKTEST SMALL CAPS</h1>
+    <span class="sub">Small caps EE.UU. · operaciones de 1 semana · backtest viernes a viernes</span>
+  </div>
+
+  <div class="grid kpis" id="kpis"></div>
+
+  <div class="grid row3">
+    <div class="p"><h2>Resultado acumulado <span id="curvaTag"></span></h2><div id="curva"></div>
+      <div class="legend"><span><i style="background:var(--up)"></i>Modelo</span><span><i style="background:var(--dim)"></i>Toda la lista (comprar todo)</span></div></div>
+    <div class="p"><h2>Drawdown <span id="ddTag"></span></h2><div id="dd"></div>
+      <div class="legend"><span>Caída desde el último máximo del modelo</span></div></div>
+    <div class="p"><h2>¿Funciona?</h2><div id="veredicto"></div></div>
+  </div>
+
+  <div class="grid row2">
+    <div class="p"><h2>Operaciones del backtest <span id="opsTag"></span></h2><div class="tbl" id="ops"></div></div>
+    <div class="p"><h2>Esta semana <span id="predTag"></span></h2><div class="tbl" id="pred"></div></div>
+  </div>
+
+  <div class="grid row2">
+    <div class="p"><h2>Resultado semanal <span id="semTag"></span></h2><div id="sem"></div>
+      <div class="legend"><span><i style="background:var(--up)"></i>Semana ganada</span><span><i style="background:var(--down)"></i>Semana perdida</span><span>Sin barra: el modelo no eligió nada</span></div></div>
+    <div class="p"><h2>Insights <span>todo el período</span></h2><ul class="ins" id="ins"></ul></div>
+  </div>
+
+  <div class="grid">
+    <div class="p"><h2>Cada filtro: rinden más las que pasan? <span>retorno semanal promedio</span></h2><div id="filtros"></div>
+      <div class="legend"><span><i style="background:var(--up)"></i>Las que pasan rinden más</span><span><i style="background:var(--down)"></i>Las que pasan rinden menos (filtro al revés)</span></div></div>
+  </div>
+
+  </section>
+
+  <aside class="drawer" id="drawer" hidden aria-label="Detalle de la acción"></aside>
+
+  <footer>Herramienta de investigación, no es asesoría financiera. Resultados simulados con datos de Yahoo Finance y Finnhub. La lista son acciones que existen hoy, así que los retornos absolutos salen inflados; lo que importa es modelo contra lista.</footer>
+</div>
+
+<script id="datos" type="application/json">/*DATOS*/</script>
+<script>
+const D = JSON.parse(document.getElementById("datos").textContent);
+const tk = t => `<button type="button" class="tk" data-t="${String(t).replace(/[^A-Za-z0-9.\-]/g, "")}">${String(t).replace(/[^A-Za-z0-9.\-]/g, "")}</button>`;
+const $ = id => document.getElementById(id);
+const pct = (x, d = 1, sign = true) => (sign && x > 0 ? "+" : "") + (x * 100).toFixed(d).replace(".", ",") + "%";
+const cls = x => x > 0 ? "up" : x < 0 ? "down" : "";
+const fecha = s => { const [y, m, d] = s.split("-"); return `${d}/${m}/${y.slice(2)}`; };
+const K = D.kpi;
+
+$("act").textContent = `Actualizado ${fecha(D.actualizado)}`;
+
+// ---------- KPIs ----------
+function gauge(v) { // semicírculo de % de aciertos
+  const a = Math.PI * (1 - v), x = 40 + 32 * Math.cos(a), y = 40 - 32 * Math.sin(a);
+  return `<svg viewBox="0 0 80 46" style="width:76px"><path d="M8 40 A32 32 0 0 1 72 40" fill="none" stroke="var(--down)" stroke-width="7"/>
+  <path d="M8 40 A32 32 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="var(--up)" stroke-width="7"/></svg>`;
+}
+function donut(pf) { // parte verde = ganancias / (ganancias + pérdidas)
+  const f = pf / (pf + 1), c = 2 * Math.PI * 24;
+  return `<svg viewBox="0 0 60 60" style="width:56px"><circle cx="30" cy="30" r="24" fill="none" stroke="var(--down)" stroke-width="7"/>
+  <circle cx="30" cy="30" r="24" fill="none" stroke="var(--up)" stroke-width="7" stroke-dasharray="${(f * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 30 30)"/></svg>`;
+}
+const wg = K.prom_gan / (K.prom_gan - K.prom_per);
+$("kpis").innerHTML = [
+  `<div class="p"><div class="lbl">Resultado acumulado</div><div class="big ${cls(K.total)}">${pct(K.total)}</div><div class="small">Toda la lista: <span class="${cls(K.total_lista)}">${pct(K.total_lista)}</span></div></div>`,
+  `<div class="p"><div class="lbl">Ventaja por semana</div><div class="big am">${K.ventaja_sem.replace(".", ",")}</div><div class="small">margen ${K.ventaja_margen.replaceAll(".", ",")}</div></div>`,
+  `<div class="p"><div class="kflex"><div><div class="lbl">Aciertos</div><div class="big">${pct(K.win, 1, false)}</div></div>${gauge(K.win)}</div><div class="small"><span class="up">${K.ganadas} ganadas</span> · <span class="down">${K.perdidas} perdidas</span></div></div>`,
+  `<div class="p"><div class="kflex"><div><div class="lbl">Profit factor</div><div class="big">${K.profit_factor.toFixed(2).replace(".", ",")}</div></div>${donut(K.profit_factor)}</div><div class="small">lo ganado ÷ lo perdido</div></div>`,
+  `<div class="p"><div class="lbl">Ganancia / pérdida prom.</div><div class="big">${(K.prom_gan / -K.prom_per).toFixed(2).replace(".", ",")}</div>
+    <div class="wl"><div style="width:${wg * 100}%;background:var(--up)"></div><div style="flex:1;background:var(--down)"></div></div>
+    <div class="kflex small"><span class="up">${pct(K.prom_gan, 2)}</span><span class="down">${pct(K.prom_per, 2)}</span></div></div>`,
+  `<div class="p"><div class="lbl">Esperanza por operación</div><div class="big ${cls(K.esperanza)}">${pct(K.esperanza, 2)}</div><div class="small">${K.operaciones} operaciones · ${K.semanas} semanas</div></div>`,
+  `<div class="p"><div class="lbl">Peor caída</div><div class="big down">${pct(K.max_dd)}</div><div class="small">tocaron el stop: ${pct(K.stops, 0, false)}</div></div>`,
+].join("");
+
+// ---------- gráficos SVG ----------
+let W = 520, H = 200; const M = { l: 40, r: 10, t: 10, b: 22 };
+function escalas(vals, n) {
+  let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+  const paso = niceStep((hi - lo) / 4); lo = Math.floor(lo / paso) * paso; hi = Math.ceil(hi / paso) * paso;
+  const x = i => M.l + (W - M.l - M.r) * i / Math.max(n - 1, 1);
+  const y = v => M.t + (H - M.t - M.b) * (hi - v) / (hi - lo);
+  const ticks = []; for (let v = lo; v <= hi + 1e-9; v += paso) ticks.push(v);
+  return { x, y, ticks };
+}
+function niceStep(s) { const p = 10 ** Math.floor(Math.log10(s)); return [1, 2, 2.5, 5, 10].map(k => k * p).find(k => k >= s); }
+function ejes(s, n) {
+  let g = s.ticks.map(v => `<line x1="${M.l}" x2="${W - M.r}" y1="${s.y(v)}" y2="${s.y(v)}" stroke="var(--line)" ${v === 0 ? "" : 'stroke-dasharray="2 4"'}/>
+    <text x="${M.l - 6}" y="${s.y(v) + 3}" text-anchor="end">${Math.round(v * 100)}%</text>`).join("");
+  [0, Math.floor((n - 1) / 2), n - 1].forEach((i, k) => {
+    g += `<text x="${s.x(i)}" y="${H - 6}" text-anchor="${["start", "middle", "end"][k]}">${fecha(D.semanal[i].f)}</text>`;
+  });
+  return g;
+}
+const S = D.semanal, n = S.length;
+const linea = (s, key) => S.map((d, i) => `${i ? "L" : "M"}${s.x(i).toFixed(1)} ${s.y(d[key]).toFixed(1)}`).join("");
+
+{ // curva acumulada
+  const s = escalas(S.flatMap(d => [d.c, d.cl]), n), path = linea(s, "c");
+  const area = `${path}L${s.x(n - 1)} ${s.y(0)}L${s.x(0)} ${s.y(0)}Z`, last = S[n - 1];
+  $("curva").innerHTML = `<svg viewBox="0 0 ${W} ${H}"><defs><linearGradient id="gc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--up)" stop-opacity=".35"/><stop offset="1" stop-color="var(--up)" stop-opacity="0"/></linearGradient></defs>
+    ${ejes(s, n)}<path d="${linea(s, "cl")}" fill="none" stroke="var(--dim)" stroke-width="1.3" stroke-dasharray="4 3"/>
+    <path d="${area}" fill="url(#gc)"/><path d="${path}" fill="none" stroke="var(--up)" stroke-width="1.8"/>
+    <circle cx="${s.x(n - 1)}" cy="${s.y(last.c)}" r="3.5" fill="var(--up)"/></svg>`;
+  $("curvaTag").textContent = pct(last.c);
+}
+{ // drawdown
+  const s = escalas(S.map(d => d.dd), n), path = linea(s, "dd");
+  $("dd").innerHTML = `<svg viewBox="0 0 ${W} ${H}">${ejes(s, n)}<path d="${path}L${s.x(n - 1)} ${s.y(0)}L${s.x(0)} ${s.y(0)}Z" fill="var(--down)" fill-opacity=".28"/>
+    <path d="${path}" fill="none" stroke="var(--down)" stroke-width="1.6"/></svg>`;
+  $("ddTag").textContent = pct(K.max_dd);
+}
+{ // barras semanales (panel ancho: lienzo más ancho para que el texto no se agrande)
+  W = 1000; H = 260;
+  const s = escalas(S.map(d => d.m), n), bw = (W - M.l - M.r) / n * 0.62;
+  const bars = S.map((d, i) => d.n ? `<rect x="${(s.x(i) - bw / 2).toFixed(1)}" y="${Math.min(s.y(d.m), s.y(0)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(Math.abs(s.y(d.m) - s.y(0)), 1).toFixed(1)}" fill="${d.m >= 0 ? "var(--up)" : "var(--down)"}"><title>${fecha(d.f)}: ${pct(d.m)} (${d.n} acciones)</title></rect>` : "").join("");
+  $("sem").innerHTML = `<svg viewBox="0 0 ${W} ${H}">${ejes(s, n)}${bars}</svg>`;
+  const g = S.filter(d => d.n && d.m > 0).length, p = S.filter(d => d.n && d.m <= 0).length;
+  $("semTag").textContent = `${g} G · ${p} P · ${n - g - p} sin operar`;
+}
+
+// ---------- veredicto ----------
+const I = D.insights;
+$("veredicto").innerHTML = `<div class="verdict"><b>Todavía no se distingue del azar.</b> Por semana le gana a la lista por ${K.ventaja_sem.replace(".", ",")}, pero el margen va de ${K.ventaja_margen.replaceAll(".", ",")}: cruza el cero.</div>
+  <ul class="ins" style="margin-top:8px">
+    <li>En el total quedó <span class="${cls(K.total - K.total_lista)}">${pct(K.total - K.total_lista)}</span> contra comprar toda la lista: ${K.semanas - K.semanas_con} semanas no eligió nada y se quedó afuera.</li>
+    <li>El puntaje no ordena: las de mejor puntaje no rinden más (correlación ${String(I.rho).replace(".", ",")}).</li>
+    <li>La regla "evitar" es lo único con señal; se está confirmando semana a semana.</li>
+  </ul>`;
+
+// ---------- tablas ----------
+$("opsTag").textContent = `${D.operaciones.length} operaciones`;
+$("ops").innerHTML = `<table><thead><tr><th>Entrada</th><th>Acción</th><th>Lado</th><th class="r">Puntaje</th><th class="r">Resultado</th></tr></thead><tbody>${
+  D.operaciones.map(o => `<tr><td>${fecha(o.f)}</td><td>${tk(o.t)}${o.stop ? '<span class="tag">STOP</span>' : ""}</td><td>COMPRA</td><td class="r">${o.s.toFixed(2).replace(".", ",")}</td><td class="r ${cls(o.r)}">${pct(o.r, 2)}</td></tr>`).join("")}</tbody></table>`;
+
+const P = D.predicciones;
+$("predTag").textContent = P.length ? `${P.length} abiertas · ${fecha(P[0].fecha)}` : "sin abiertas";
+$("pred").innerHTML = `<table><thead><tr><th>Acción</th><th class="r">Entrada</th><th class="r">Esperado</th><th class="r">Stop</th></tr></thead><tbody>${
+  P.map(p => `<tr><td>${tk(p.ticker)}</td><td class="r">${p.precio_entrada.toFixed(2)}</td><td class="r up">${pct(p.ret_esperado)}</td><td class="r down">${p.stop.toFixed(2)}</td></tr>`).join("")}</tbody></table>
+  <div class="small" style="margin-top:8px">Vencen el viernes siguiente; ahí se comparan con lo que pasó.</div>`;
+
+// ---------- insights ----------
+$("ins").innerHTML = [
+  `Mejor acción: <b>${I.mejor[0]}</b> <span class="up">${pct(I.mejor[1])}</span> en ${I.mejor[2]} operaciones. Peor: <b>${I.peor[0]}</b> <span class="down">${pct(I.peor[1])}</span> en ${I.peor[2]}.`,
+  `Mejor semana: <b>${fecha(I.mejor_sem[0])}</b> <span class="up">${pct(I.mejor_sem[1])}</span>. Peor: <b>${fecha(I.peor_sem[0])}</b> <span class="down">${pct(I.peor_sem[1])}</span>.`,
+  `Las 5 mejores operaciones suman el <b>${pct(I.top5, 0, false)}</b> de la ganancia total: sin ellas, el resto pierde.`,
+  `La peor pérdida equivale a <b>${I.rel_gp.toFixed(1).replace(".", ",")}</b> ganancias promedio.`,
+  `<b>${pct(K.stops, 0, false)}</b> de las operaciones tocaron el stop de 1,5 ATR.`,
+  `Eligió algo en <b>${K.semanas_con}</b> de ${K.semanas} semanas; ${(K.operaciones / K.semanas_con).toFixed(1).replace(".", ",")} acciones por semana en promedio.`,
+].map(t => `<li>${t}</li>`).join("");
+
+// ---------- filtros ----------
+const maxd = Math.max(...D.filtros.map(f => Math.abs(f.pasan - f.no_pasan)));
+$("filtros").innerHTML = D.filtros.map(f => {
+  const d = f.pasan - f.no_pasan, w = Math.abs(d) / maxd * 50;
+  return `<div class="fbar"><span>${f.filtro}</span><div class="track"><div class="mid"></div><div class="v" style="${d >= 0 ? `left:50%` : `right:50%`};width:${w}%;background:${d >= 0 ? "var(--up)" : "var(--down)"}"></div></div>
+    <span class="r ${cls(d)}" style="text-align:right">${d > 0 ? "+" : ""}${d.toFixed(2).replace(".", ",")} pp</span></div>`;
+}).join("");
+
+// ---------- regla evitar ----------
+const R = D.regla, ult = R[R.length - 1];
+const hechas = R.filter(g => g.gano_4s && g.gano_4s !== "pendiente");
+$("regla").innerHTML = `<div class="lbl">Meta: ganar 70% de los grupos a 4 semanas</div>
+  <div class="big">${hechas.length ? hechas.filter(g => g.gano_4s === "sí").length + " de " + hechas.length : "0 de 0"}</div>
+  <div class="small">grupos resueltos a 4 semanas · ${R.length} de 12 iniciados</div>
+  <div class="dots">${Array.from({ length: 12 }, (_, i) => { const g = R[i]; if (!g) return "<span></span>";
+    const v = g.gano_4s; return `<span class="${v === "sí" ? "" : v === "no" ? "" : "pend"}" style="${v === "sí" ? "background:var(--up);border-color:var(--up)" : v === "no" ? "background:var(--down);border-color:var(--down)" : ""}" title="${fecha(g.fecha)}"></span>`; }).join("")}</div>
+  <ul class="ins" style="margin-top:10px">
+    <li>Último grupo ${fecha(ult.fecha)}: <b>${ult.evitadas}</b> de ${ult.acciones} acciones a evitar.</li>
+    <li>Primer resultado a 1 semana: ${fecha(ult.vence_1s)}. A 4 semanas: ${fecha(ult.vence_4s)}.</li>
+  </ul>`;
+
+// ================= pestañas nuevas =================
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const num = (x, d = 2) => Number(x).toFixed(d).replace(".", ",");
+const SM = D.small, SPD = D.sp, B = D.balances;
+const kpi = (lbl, val, sub, c = "") => `<div class="p"><div class="lbl">${lbl}</div><div class="big ${c}">${val}</div><div class="small">${sub}</div></div>`;
+const tabla = (cols, filas) => `<table><thead><tr>${cols.map(c => `<th class="${c[1] || ""}">${c[0]}</th>`).join("")}</tr></thead><tbody>${filas.join("")}</tbody></table>`;
+const barras = (items, fmt) => { // barras divergentes alrededor de cero
+  const mx = Math.max(...items.map(i => Math.abs(i.v))) || 1;
+  return items.map(i => `<div class="fbar" style="grid-template-columns:minmax(0,150px) minmax(0,1fr) 70px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(i.n)}">${esc(i.n)}</span><div class="track"><div class="mid"></div><div class="v" style="${i.v >= 0 ? "left:50%" : "right:50%"};width:${Math.abs(i.v) / mx * 50}%;background:${i.v >= 0 ? "var(--up)" : "var(--down)"}"></div></div><span class="${cls(i.v)}" style="text-align:right">${fmt(i.v)}</span></div>`).join("");
+};
+const hBar = (items, color) => { const mx = Math.max(...items.map(i => i.v)) || 1;
+  return items.map(i => `<div class="fbar" style="grid-template-columns:minmax(0,150px) minmax(0,1fr) 50px"><span>${esc(i.n)}</span><div class="track"><div class="v" style="left:0;width:${i.v / mx * 100}%;background:${i.c || color}"></div></div><span style="text-align:right">${i.v}</span></div>`).join(""); };
+const TOP = SPD.top, balSp = B.sp.filas, balSm = B.small.filas;
+const hoyBal = balSp.filter(b => b.fecha <= addDays(balSp[0]?.fecha, 6));
+function addDays(s, n) { if (!s) return ""; const d = new Date(s + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+
+// ---------- 1. Resumen ----------
+$("resKpis").innerHTML = [
+  kpi("Small caps a evitar", `${SM.evitar}<span class="small"> de ${SM.evaluadas}</span>`, `lista semanal · ${fecha(SM.fecha)}`, "down"),
+  kpi("Predicciones abiertas", D.predicciones.length, "small caps que pasaron toda la cascada"),
+  kpi("S&P 500 pasan la cascada", `${SPD.pasan}<span class="small"> de ${SPD.evaluadas}</span>`, `elección del ${fecha(SPD.fecha)}`, "up"),
+  kpi("Balances en 7 días", hoyBal.length, `S&P 500 · ${balSm.filter(b => b.fecha <= addDays(balSm[0]?.fecha, 6)).length} small caps`, "am"),
+  kpi("Regla evitar: grupos", `${D.regla.filter(g => g.gano_4s === "sí").length} de 12`, "meta: ganar 70% a 4 semanas"),
+].join("");
+$("resSmallTag").textContent = `${SM.evitar} acciones`;
+$("resEvitar").innerHTML = SM.lista_evitar.map(e => `<span>${tk(e.t)}</span>`).join("");
+$("resSpTag").textContent = fecha(SPD.fecha);
+$("resTop").innerHTML = tabla([["Acción"], ["Puntaje", "r"], ["Rango 1 mes", "r"]],
+  TOP.map(t => `<tr><td>${tk(t.t)}${t.bal ? '<span class="tag">BALANCE</span>' : ""}${t.cedear ? '<span class="tag">CEDEAR</span>' : ""}</td><td class="r">${num(t.p)}</td><td class="r">±${num(t.rango, 1)}%</td></tr>`));
+$("resBalTag").textContent = `${hoyBal.length} del S&P`;
+$("resBal").innerHTML = tabla([["Día"], ["Acción"], ["Supera", "r"], ["Mueve", "r"]],
+  hoyBal.map(b => `<tr><td>${fecha(b.fecha)}</td><td>${tk(b.ticker)}</td><td class="r">${pct(b.prob_superar, 0, false)}</td><td class="r am">±${num(b.movimiento_tipico_pct, 1)}%</td></tr>`));
+$("resProbado").innerHTML = [
+  `<b>Small caps, regla evitar:</b> en el pasado lo que queda le ganó a lo evitado ${num(0.33)} pp por semana. Se está confirmando hacia adelante desde el 28/10.`,
+  `<b>Small caps, cascada y puntaje:</b> no le ganan a elegir al azar de la misma lista (pestaña Backtest).`,
+  `<b>S&P 500:</b> la regla evitar no sirve; la cascada y el top 20% dieron algo mejor que el resto, pero sin firmeza estadística.`,
+  `<b>Balances:</b> el historial anticipa si va a superar lo esperado, no si la acción sube. Sí avisa que se va a mover más que lo normal.`,
+].map(t => `<li>${t}</li>`).join("");
+
+// ---------- 2. Small caps ----------
+$("smallSub").textContent = `Lista de ${SM.evaluadas} acciones · ${fecha(SM.fecha)}`;
+const quedan = SM.evaluadas - SM.evitar;
+$("smallKpis").innerHTML = [
+  kpi("A evitar", SM.evitar, `${pct(SM.evitar / SM.evaluadas, 0, false)} de la lista`, "down"),
+  kpi("Quedan", quedan, "sin ninguna alerta", "up"),
+  kpi("Pasan la cascada", D.predicciones.length, "con predicción a 1 semana"),
+  kpi("Regla, último año", `${SM.regla_hist.filter(r => r.d > 0).length} de ${SM.regla_hist.length}`, "semanas ganadas a 4 semanas"),
+].join("");
+$("smallEvTag").textContent = `${SM.evitar} de ${SM.evaluadas}`;
+$("smallEvitar").innerHTML = SM.lista_evitar.map(e => `<span>${tk(e.t)}<small>${esc(e.m)}</small></span>`).join("");
+$("smallMotivos").innerHTML = hBar(Object.entries(SM.motivos).map(([n, v]) => ({ n, v })), "var(--down)") +
+  `<div class="note">Una acción puede tener más de un motivo.</div>`;
+{
+  const H2 = 200, Wd = 1000, R = SM.regla_hist, mx = Math.max(...R.map(r => Math.abs(r.d))), stepv = niceStep(mx / 2);
+  const lim = Math.ceil(mx / stepv) * stepv, y = v => 10 + (H2 - 32) * (lim - v) / (2 * lim), bw = (Wd - 50) / R.length;
+  let g = "";
+  for (let v = -lim; v <= lim + 1e-9; v += stepv) g += `<line x1="40" x2="${Wd}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" ${Math.abs(v) < 1e-9 ? "" : 'stroke-dasharray="2 4"'}/><text x="34" y="${y(v) + 3}" text-anchor="end">${num(v * 100, 1)}%</text>`;
+  g += R.map((r, i) => `<rect x="${(45 + i * bw).toFixed(1)}" y="${Math.min(y(r.d), y(0)).toFixed(1)}" width="${(bw * .7).toFixed(1)}" height="${Math.max(Math.abs(y(r.d) - y(0)), 1).toFixed(1)}" fill="${r.d >= 0 ? "var(--up)" : "var(--down)"}"><title>${fecha(r.f)}: ${pct(r.d, 2)}</title></rect>`).join("");
+  g += `<text x="45" y="${H2 - 6}">${fecha(R[0].f)}</text><text x="${Wd}" y="${H2 - 6}" text-anchor="end">${fecha(R[R.length - 1].f)}</text>`;
+  $("smallHist").innerHTML = `<svg viewBox="0 0 ${Wd} ${H2}">${g}</svg>`;
+}
+{
+  const mx = Math.max(...SM.senales.flatMap(x => [Math.abs(x.lo), Math.abs(x.hi)]));
+  const X = v => 50 + v / mx * 50;
+  $("senales").innerHTML = SM.senales.map(x => {
+    const firme = x.lo > 0 || x.hi < 0, col = !firme ? "var(--dim)" : x.d > 0 ? "var(--up)" : "var(--down)";
+    return `<div class="fbar" style="grid-template-columns:minmax(0,260px) minmax(0,1fr) 70px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(x.s)}"><span class="tag" style="margin:0 6px 0 0">${esc(x.tipo)}</span>${esc(x.s)}</span>
+      <div class="track" style="background:none"><div class="mid"></div><div class="v" style="left:${X(x.lo)}%;width:${X(x.hi) - X(x.lo)}%;top:4px;bottom:4px;background:${col}"></div><div class="v" style="left:calc(${X(x.d)}% - 4px);width:8px;background:${col}"></div></div>
+      <span class="${firme ? cls(x.d) : ""}" style="text-align:right">${x.d > 0 ? "+" : ""}${num(x.d * 100)} pp</span></div>`;
+  }).join("");
+}
+
+// ---------- 3. S&P 500 ----------
+$("spSub").textContent = `${SPD.evaluadas} empresas · elección del ${fecha(SPD.fecha)} · se mide a 1 mes`;
+$("spKpis").innerHTML = [
+  kpi("Pasan la cascada", SPD.pasan, `de ${SPD.evaluadas} evaluadas`, "up"),
+  kpi("Top 10 con balance", TOP.filter(t => t.bal).length, "presentan antes de vencer", "am"),
+  kpi("Top 10 con CEDEAR", TOP.filter(t => t.cedear).length, `${SPD.con_cedear} de las ${SPD.pasan} que pasan`),
+  kpi("Top 10 con alerta", TOP.filter(t => t.evitar === "sí").length, "regla evitar: no probada en S&P"),
+].join("");
+$("spTop").innerHTML = `<div style="overflow-x:auto">${tabla([["Acción"], ["Empresa"], ["Sector"], ["Puntaje", "r"], ["Precio", "r"], ["Piso", "r"], ["Techo", "r"], ["Balance"], ["CEDEAR"]],
+  TOP.map(t => `<tr><td>${tk(t.t)}${t.evitar === "sí" ? `<span class="tag" title="${esc(t.motivos)}">ALERTA</span>` : ""}</td><td>${esc(t.e)}</td><td style="color:var(--dim)">${esc(t.sec)}</td><td class="r am">${num(t.p)}</td><td class="r">${num(t.px)}</td><td class="r down">${num(t.piso)}</td><td class="r up">${num(t.techo)}</td><td>${t.bal ? fecha(t.bal) : '<span style="color:var(--dim)">—</span>'}</td><td>${t.cedear ? esc(t.cedear) : '<span style="color:var(--dim)">—</span>'}</td></tr>`))}</div>`;
+const nombres = { sentimiento: "Sentimiento", tecnico: "Técnico", momentum: "Momentum", ganancias: "Ganancias", graham: "Graham", "pasa todo": "Pasan todo" };
+$("spEmbudo").innerHTML = hBar(SPD.embudo.map(e => ({ n: (e.etapa === "pasa todo" ? "" : "Caen en ") + nombres[e.etapa], v: e.n, c: e.etapa === "pasa todo" ? "var(--up)" : "var(--down)" })));
+$("spFiltros").innerHTML = barras(SPD.filtros.map(f => ({ n: f.filtro, v: f.dif_1m })), v => `${v > 0 ? "+" : ""}${num(v)} pp`);
+
+// ---------- 4. Balances ----------
+const aviso = h => B.aviso.find(a => a.h === h && a.hay_balance === true), sin = h => B.aviso.find(a => a.h === h && a.hay_balance === false);
+$("balKpis").innerHTML = [
+  kpi("S&P 500 en 2 semanas", balSp.length, "presentan balance", "am"),
+  kpi("Small caps en 2 semanas", balSm.length, "presentan balance", "am"),
+  kpi("Se sale del rango (1 sem.)", pct(aviso("1s").fuera_de_rango, 0, false), `con balance · sin balance ${pct(sin("1s").fuera_de_rango, 0, false)}`, "down"),
+  kpi("Movimiento típico (1 sem.)", `${num(aviso("1s").movimiento_medio / sin("1s").movimiento_medio, 1)}x`, "con balance vs. sin balance"),
+].join("");
+function dibujaBal(cual) {
+  const filas = cual === "sp" ? balSp : balSm;
+  $("balSp").setAttribute("aria-pressed", cual === "sp"); $("balSmall").setAttribute("aria-pressed", cual !== "sp");
+  $("balTabla").innerHTML = tabla([["Día"], ["Hora"], ["Acción"], ["Superó antes"], ["Prob. superar", "r"], ["Mueve típico", "r"]],
+    filas.map(b => `<tr><td>${fecha(b.fecha)}</td><td style="color:var(--dim)">${esc(b.hora || "—")}</td><td>${tk(b.ticker)}</td><td>${esc(b["superó_antes"])}</td><td class="r ${b.prob_superar >= .75 ? "up" : b.prob_superar < .55 ? "down" : ""}">${pct(b.prob_superar, 0, false)}</td><td class="r am">±${num(b.movimiento_tipico_pct, 1)}%</td></tr>`));
+  const pr = (cual === "sp" ? B.sp : B.small).prob;
+  $("balProbTag").textContent = cual === "sp" ? "S&P 500" : "small caps";
+  $("balProb").innerHTML = pr.map(r => `<div class="fbar" style="grid-template-columns:110px minmax(0,1fr) 90px"><span>${esc(r["superó_antes"])}</span><div class="track"><div class="v" style="left:0;width:${r.tasa_superar * 100}%;background:var(--blue)"></div></div><span style="text-align:right">${pct(r.tasa_superar, 0, false)} <small style="color:var(--dim)">${r.casos}</small></span></div>`).join("") +
+    `<div class="note">De los últimos 4 balances, cuántos superó lo esperado. El número chico es la cantidad de casos.</div>`;
+}
+$("balSp").onclick = () => dibujaBal("sp"); $("balSmall").onclick = () => dibujaBal("small");
+dibujaBal("sp");
+
+// ---------- navegación por pestañas ----------
+const TABS = ["resumen", "small", "sp500", "balances", "backtest"];
+function mostrar() {
+  const t = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "resumen";
+  TABS.forEach(x => { $("t-" + x).hidden = x !== t; });
+  document.querySelectorAll(".tabs a").forEach(a => a.getAttribute("href") === "#" + t ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+}
+addEventListener("hashchange", mostrar); mostrar();
+addEventListener("keydown", e => { if (/^[1-5]$/.test(e.key) && !e.target.closest("input,textarea")) location.hash = TABS[e.key - 1]; });
+
+// ================= precios, detalle por acción y tiempo real =================
+const PX = D.precios || { fechas: [], cierres: {} };
+const VIVO = {}; // cotizaciones de /api/cotizaciones (solo en Vercel)
+const RELOJ = [...new Set([...TOP.map(t => t.t), ...D.predicciones.map(p => p.ticker), "SPY", "IWM"])];
+const ultimo = t => { const c = PX.cierres[t]; if (!c) return null; const v = c.filter(x => x != null); return { p: v[v.length - 1], pc: v[v.length - 2] }; };
+const cot = t => VIVO[t] || ultimo(t);
+
+function dibujaTape(cambiados = []) {
+  $("tape").innerHTML = RELOJ.map(t => { const q = cot(t); if (!q) return "";
+    const ch = q.p / q.pc - 1;
+    return `<button type="button" class="q${cambiados.includes(t) ? " flash" : ""}" data-t="${t}"><b>${t}</b><span>${num(q.p)}</span><span class="${cls(ch)}">${pct(ch, 2)}</span></button>`; }).join("");
+}
+async function traerVivo() {
+  try {
+    const r = await fetch("api/cotizaciones?t=" + RELOJ.join(","), { cache: "no-store" });
+    if (!r.ok) throw 0;
+    const j = await r.json(); if (!Object.keys(j).length) throw 0;
+    const cambiados = Object.keys(j).filter(t => !VIVO[t] || VIVO[t].p !== j[t].p);
+    Object.assign(VIVO, j);
+    $("liveChip").classList.add("on");
+    $("liveTxt").textContent = "En vivo " + new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    dibujaTape(cambiados);
+    if (abierta) detalle(abierta, false);
+    return true;
+  } catch (e) {
+    $("liveChip").classList.remove("on");
+    $("liveTxt").textContent = "Cierre " + (PX.fechas.length ? fecha(PX.fechas[PX.fechas.length - 1]) : "");
+    $("liveChip").title = "Los precios en vivo se activan al publicar en Vercel con la clave de Finnhub";
+    return false;
+  }
+}
+dibujaTape();
+traerVivo().then(ok => { if (ok) setInterval(traerVivo, 60000); });
+
+// ---------- panel de detalle ----------
+let abierta = null, rango = 126;
+function contexto(t) {
+  const sp = TOP.find(x => x.t === t) || null, pr = D.predicciones.find(x => x.ticker === t) || null;
+  const ev = SM.lista_evitar.find(x => x.t === t) || null, bal = balSp.concat(balSm).find(x => x.ticker === t) || null;
+  const ops = D.operaciones.filter(o => o.t === t);
+  return { sp, pr, ev, bal, ops };
+}
+function detalle(t, foco = true) {
+  abierta = t;
+  const c = PX.cierres[t], fx = PX.fechas, C = contexto(t), q = cot(t);
+  const lineas = [];
+  if (C.sp) lineas.push({ v: C.sp.piso, n: "Piso 1 mes", col: "var(--down)" }, { v: C.sp.techo, n: "Techo 1 mes", col: "var(--up)" });
+  if (C.pr) lineas.push({ v: C.pr.precio_entrada, n: "Entrada", col: "var(--amber)" }, { v: C.pr.stop, n: "Stop", col: "var(--down)" });
+  let html = `<div class="kflex"><div><div class="lbl">Detalle</div><div class="big">${t}</div><div class="small">${esc(C.sp ? C.sp.e : "")}</div></div><button type="button" class="x" id="cerrar">Cerrar ✕</button></div>`;
+  if (q) { const ch = q.p / q.pc - 1;
+    html += `<div class="kflex"><div class="big" style="font-size:32px">${num(q.p)}</div><div class="${cls(ch)}" style="font-size:16px">${pct(ch, 2)}</div><span class="chip live ${VIVO[t] ? "on" : ""}"><i></i>${VIVO[t] ? "En vivo" : "Cierre"}</span></div>`; }
+  if (c) html += `<div class="kflex"><span class="lbl">Precio diario</span><span class="ranges" id="rangos">${[[21, "1M"], [63, "3M"], [126, "6M"]].map(([n, l]) => `<button type="button" data-n="${n}" aria-pressed="${n === rango}">${l}</button>`).join("")}</span></div><div class="chart" id="dChart"></div>`;
+  else html += `<div class="small">Sin historial de precios para esta acción.</div>`;
+  const kv = [];
+  if (C.sp) kv.push(["Puntaje S&P", num(C.sp.p)], ["Rango 1 mes", "±" + num(C.sp.rango, 1) + "%"], ["Sector", esc(C.sp.sec)]);
+  if (C.sp && C.sp.cedear) kv.push(["CEDEAR", esc(C.sp.cedear)]);
+  if (C.pr) kv.push(["Suba esperada", pct(C.pr.ret_esperado)], ["Puntaje", num(C.pr.score)], ["Vence", fecha(addDays(C.pr.fecha, 7))]);
+  if (C.bal) kv.push(["Balance", fecha(C.bal.fecha)], ["Prob. superar", pct(C.bal.prob_superar, 0, false)], ["Mueve típico", "±" + num(C.bal.movimiento_tipico_pct, 1) + "%"]);
+  if (kv.length) html += `<div class="kv">${kv.map(([k, v]) => `<div><div class="lbl">${k}</div><div>${v}</div></div>`).join("")}</div>`;
+  const notas = [];
+  if (C.ev) notas.push(`<span class="down">Regla evitar:</span> ${esc(C.ev.m)}.`);
+  if (C.sp && C.sp.evitar === "sí") notas.push(`Alerta en S&P (${esc(C.sp.motivos)}); la regla no está probada en grandes empresas.`);
+  if (C.ops.length) notas.push(`En el backtest se eligió ${C.ops.length} ${C.ops.length === 1 ? "vez" : "veces"}: suma <span class="${cls(C.ops.reduce((a, o) => a + o.r, 0))}">${pct(C.ops.reduce((a, o) => a + o.r, 0))}</span>.`);
+  if (notas.length) html += `<ul class="ins">${notas.map(n => `<li>${n}</li>`).join("")}</ul>`;
+  const dr = $("drawer"); dr.innerHTML = html; dr.hidden = false;
+  $("cerrar").onclick = cerrar;
+  if (c) {
+    $("rangos").onclick = e => { const b = e.target.closest("button"); if (b) { rango = +b.dataset.n; detalle(t, false); } };
+    lineaPrecio($("dChart"), fx.slice(-rango), c.slice(-rango), lineas, VIVO[t]?.p, C.bal?.fecha);
+  }
+  if (foco) $("cerrar").focus();
+}
+function cerrar() { $("drawer").hidden = true; abierta = null; }
+addEventListener("keydown", e => { if (e.key === "Escape" && abierta) cerrar(); });
+document.addEventListener("click", e => { const b = e.target.closest("[data-t]"); if (b && !b.closest(".ranges")) detalle(b.dataset.t); });
+
+function lineaPrecio(el, fx, vals, lineas, vivo, balance) {
+  const Wc = 520, Hc = 240, m = { l: 48, r: 10, t: 10, b: 22 };
+  const pts = vals.map((v, i) => ({ f: fx[i], v })).filter(p => p.v != null);
+  if (vivo) pts.push({ f: "ahora", v: vivo });
+  const todos = pts.map(p => p.v).concat(lineas.map(l => l.v));
+  let lo = Math.min(...todos), hi = Math.max(...todos); const pad = (hi - lo) * .06 || 1; lo -= pad; hi += pad;
+  const x = i => m.l + (Wc - m.l - m.r) * i / Math.max(pts.length - 1, 1), y = v => m.t + (Hc - m.t - m.b) * (hi - v) / (hi - lo);
+  const st = niceStep((hi - lo) / 4); let g = "";
+  for (let v = Math.ceil(lo / st) * st; v <= hi; v += st) g += `<line x1="${m.l}" x2="${Wc - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-dasharray="2 4"/><text x="${m.l - 6}" y="${y(v) + 3}" text-anchor="end">${num(v, v < 20 ? 2 : 0)}</text>`;
+  [0, pts.length - 1].forEach((i, k) => { g += `<text x="${x(i)}" y="${Hc - 6}" text-anchor="${k ? "end" : "start"}">${pts[i].f === "ahora" ? "ahora" : fecha(pts[i].f)}</text>`; });
+  lineas.forEach(l => { g += `<line x1="${m.l}" x2="${Wc - m.r}" y1="${y(l.v)}" y2="${y(l.v)}" stroke="${l.col}" stroke-dasharray="5 3"/><text x="${Wc - m.r - 2}" y="${y(l.v) - 4}" text-anchor="end" style="fill:${l.col}">${l.n} ${num(l.v)}</text>`; });
+  const up = pts[pts.length - 1].v >= pts[0].v, col = up ? "var(--up)" : "var(--down)";
+  const path = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(p.v).toFixed(1)}`).join("");
+  g += `<path d="${path}L${x(pts.length - 1)} ${Hc - m.b}L${x(0)} ${Hc - m.b}Z" fill="${col}" fill-opacity=".12"/><path d="${path}" fill="none" stroke="${col}" stroke-width="1.7"/>`;
+  g += `<circle cx="${x(pts.length - 1)}" cy="${y(pts[pts.length - 1].v)}" r="3.5" fill="${col}"/>`;
+  if (balance) g += `<text x="${m.l + 4}" y="${m.t + 10}" style="fill:var(--amber)">Balance ${fecha(balance)}</text>`;
+  g += `<line id="cx" y1="${m.t}" y2="${Hc - m.b}" stroke="var(--amber)" stroke-width="1" visibility="hidden"/><circle id="cd" r="4" fill="var(--amber)" visibility="hidden"/>`;
+  el.innerHTML = `<svg viewBox="0 0 ${Wc} ${Hc}">${g}<rect x="${m.l}" y="${m.t}" width="${Wc - m.l - m.r}" height="${Hc - m.t - m.b}" fill="transparent" id="hov"/></svg><div class="tip" hidden></div>`;
+  hover(el, pts.length, i => ({ x: x(i), y: y(pts[i].v), txt: `${pts[i].f === "ahora" ? "Ahora" : fecha(pts[i].f)} · ${num(pts[i].v)} · ${pct(pts[i].v / pts[0].v - 1)}` }), Wc, m);
+}
+// cursor con tooltip para cualquier gráfico de línea
+function hover(el, n, info, Wc, m) {
+  const svg = el.querySelector("svg"), tip = el.querySelector(".tip"), cx = svg.querySelector("#cx"), cd = svg.querySelector("#cd");
+  const mover = ev => {
+    const r = svg.getBoundingClientRect(), px = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) / r.width * Wc;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / (Wc - m.l - m.r) * (n - 1)))), d = info(i), k = r.width / Wc;
+    cx.setAttribute("x1", d.x); cx.setAttribute("x2", d.x); cd.setAttribute("cx", d.x); cd.setAttribute("cy", d.y);
+    cx.setAttribute("visibility", "visible"); cd.setAttribute("visibility", "visible");
+    tip.hidden = false; tip.innerHTML = d.txt;
+    const left = Math.min(Math.max(d.x * k - tip.offsetWidth / 2, 0), r.width - tip.offsetWidth);
+    tip.style.left = left + "px"; tip.style.top = Math.max(d.y * k - 36, 0) + "px";
+  };
+  const salir = () => { tip.hidden = true; cx.setAttribute("visibility", "hidden"); cd.setAttribute("visibility", "hidden"); };
+  svg.addEventListener("mousemove", mover); svg.addEventListener("touchmove", mover, { passive: true }); svg.addEventListener("mouseleave", salir); svg.addEventListener("touchend", salir);
+}
+// tooltips en la curva acumulada y el drawdown del backtest
+function agregarHover(id, key, txt) {
+  const el = $(id); el.classList.add("chart"); const svg = el.querySelector("svg");
+  const s = escalas(key === "c" ? S.flatMap(d => [d.c, d.cl]) : S.map(d => d[key]), n);
+  svg.insertAdjacentHTML("beforeend", `<line id="cx" y1="${M.t}" y2="${H - M.b}" stroke="var(--amber)" visibility="hidden"/><circle id="cd" r="4" fill="var(--amber)" visibility="hidden"/>`);
+  el.insertAdjacentHTML("beforeend", `<div class="tip" hidden></div>`);
+  hover(el, n, i => ({ x: s.x(i), y: s.y(S[i][key]), txt: txt(S[i]) }), W, M);
+}
+W = 520; H = 200;
+agregarHover("curva", "c", d => `${fecha(d.f)} · modelo ${pct(d.c)} · lista ${pct(d.cl)}`);
+agregarHover("dd", "dd", d => `${fecha(d.f)} · ${pct(d.dd)}`);
+</script>
