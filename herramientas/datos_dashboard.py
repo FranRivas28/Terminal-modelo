@@ -1,4 +1,4 @@
-"""Junta los números del backtest, las predicciones y la regla "evitar" en dashboard/datos.json,
+"""Junta las elegidas de la semana (small caps y S&P 500), los balances y el backtest en dashboard/datos.json,
 que es lo único que lee la página del dashboard (index.html)."""
 import json
 from pathlib import Path
@@ -57,6 +57,7 @@ datos = {
     "operaciones": [{"f": str(o.fecha.date()), "t": o.ticker, "s": round(o.score, 2), "r": round(o.ret_real, 4),
                      "stop": bool(o.toco_stop)} for o in ops.sort_values("fecha", ascending=False).itertuples()],
     "predicciones": pred.astype(object).where(pred.notna(), None).to_dict(orient="records"),
+    "vence_small": str((pd.Timestamp(pred["fecha"].max()) + pd.Timedelta(days=7)).date()) if len(pred) else "",
     "regla": regla.fillna("").to_dict(orient="records"),
     "filtros": filtros,
     "insights": {
@@ -69,8 +70,11 @@ datos = {
     },
 }
 
-# ---------- Small caps: regla "evitar" de esta semana y señales probadas ----------
+# ---------- Small caps: nombre de cada elegida, regla "evitar" (secundaria) y señales probadas ----------
 EST, SP = BASE / "estudio", BASE / "sp500"
+nombres = pd.read_csv(EST / "universo.csv").drop_duplicates("ticker").set_index("ticker")["nombre"]
+for p in datos["predicciones"]:
+    p["empresa"] = str(nombres.get(p["ticker"], ""))
 al = pd.read_csv(SEG / "alertas.csv")
 al = al[al["fecha"] == al["fecha"].max()]
 motivos = {"Mucha cobertura": int((al["alerta_cobertura"] == "sí").sum()), "Salto de noticias": int((al["alerta_salto"] == "sí").sum()),
@@ -92,7 +96,7 @@ evs = pd.read_csv(SP / "evaluacion_sp500.csv")
 orden = ["sentimiento", "tecnico", "momentum", "ganancias", "graham", "pasa todo"]
 top = sel[sel["top10"] == "sí"].sort_values("puntaje", ascending=False)
 datos["sp"] = {
-    "fecha": sel["fecha"].max(), "evaluadas": int(len(evs)), "pasan": int((evs["cae_en"] == "pasa todo").sum()),
+    "fecha": sel["fecha"].max(), "vence": pd.read_csv(SP / "prediccion_sp500.csv")["vence"].max(), "evaluadas": int(len(evs)), "pasan": int((evs["cae_en"] == "pasa todo").sum()),
     "embudo": [{"etapa": e, "n": int((evs["cae_en"] == e).sum())} for e in orden],
     "top": [{"t": f.ticker, "e": f.empresa, "sec": f.sector, "p": f.puntaje, "px": round(f.precio, 2), "piso": f.piso, "techo": f.techo,
              "rango": f.rango_mes_pct, "bal": f.balance if isinstance(f.balance, str) else "", "evitar": f.evitar,
@@ -111,6 +115,10 @@ def proximos(nombre, prob):
 datos["balances"] = {"sp": proximos("proximos_balances.csv", "probabilidad_superar.csv"),
                      "small": proximos("proximos_balances_small.csv", "probabilidad_superar_small.csv"),
                      "aviso": pd.read_csv(SP / "aviso_balance_sp500.csv").to_dict(orient="records")}
+
+bal_small = {b["ticker"]: b["fecha"] for b in datos["balances"]["small"]["filas"]}
+for p in datos["predicciones"]:
+    p["balance"] = bal_small.get(p["ticker"], "")
 
 def limpiar(x):  # NaN no es JSON válido: pasa a null
     if isinstance(x, dict): return {k: limpiar(v) for k, v in x.items()}
