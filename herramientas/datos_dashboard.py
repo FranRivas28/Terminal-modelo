@@ -133,6 +133,10 @@ datos["balances"] = {"sp": proximos("proximos_balances.csv", "probabilidad_super
                      "small": proximos("proximos_balances_small.csv", "probabilidad_superar_small.csv"),
                      "aviso": pd.read_csv(SP / "aviso_balance_sp500.csv").to_dict(orient="records")}
 
+# ---------- Checkpoints: foto de cómo vienen las elegidas, uno por fecha (checkpoint.py) ----------
+cps = BASE / "checkpoints" / "checkpoints.json"
+datos["checkpoints"] = json.loads(cps.read_text()) if cps.exists() else []
+
 bal_small = {b["ticker"]: b["fecha"] for b in datos["balances"]["small"]["filas"]}
 for p in datos["predicciones"]:
     p["balance"] = bal_small.get(p["ticker"], "")

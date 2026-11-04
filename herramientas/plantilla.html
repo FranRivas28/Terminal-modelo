@@ -152,6 +152,7 @@ details.mas .p { background: var(--bg); }
     <a href="#cedears"><b>4</b>CEDEARs</a>
     <a href="#balances"><b>5</b>Balances</a>
     <a href="#backtest"><b>6</b>Backtest</a>
+    <a href="#checkpoints"><b>7</b>Checkpoints</a>
   </nav>
 
   <!-- ============ 1. RESUMEN ============ -->
@@ -270,6 +271,14 @@ details.mas .p { background: var(--bg); }
         <div class="p"><h2>Operaciones del backtest <span id="opsTag"></span></h2><div class="tbl" id="ops"></div></div>
       </div>
     </details>
+  </section>
+
+  <!-- ============ 7. CHECKPOINTS ============ -->
+  <section class="tab" id="t-checkpoints">
+    <div class="kflex" style="flex-wrap:wrap"><h1>CHECKPOINTS</h1><span class="sub" id="cpSub"></span></div>
+    <div class="p"><h2>Historial <span>promedio de las elegidas vs. su índice · percentil contra el azar</span></h2><div style="overflow-x:auto" id="cpHist"></div>
+      <div class="note">Percentil contra el azar: a cuántas de cada 100 carteras armadas al azar (mismo tamaño, mismo universo) les ganaron las elegidas. 50 es igual que el azar. Una sola semana no prueba nada: el backtest de un año no mostró ventaja frente al azar.</div></div>
+    <div id="cpLista" class="grid"></div>
   </section>
 
   <aside class="drawer" id="drawer" hidden aria-label="Detalle de la acción"></aside>
@@ -674,14 +683,45 @@ $("ins").innerHTML = [
 }
 
 // ================= navegación =================
-const TABS = ["resumen", "small", "sp500", "cedears", "balances", "backtest"];
+// ================= 7. Checkpoints =================
+const CPS = (D.checkpoints || []).slice().reverse(); // el más nuevo primero
+const CP_EST = { dentro: "Dentro", arriba: "Arriba del cono", abajo: "Debajo del cono" };
+const CP_PILL = { dentro: "rango", arriba: "arriba", abajo: "abajo" };
+function cpGrupo(g) {
+  const plazo = g.vencido ? "plazo cumplido" : `vence ${fecha(g.vence)}`;
+  const filas = g.acciones.map(a => `<tr><td>${PX.cierres[a.t] ? tk(a.t) : esc(a.t)}${a.stop ? '<span class="tag">STOP</span>' : ""}</td><td class="r">${num(a.entrada)}</td><td class="r">${num(a.hoy)}</td><td class="r ${cls(a.r)}">${pct(a.r)}</td><td><span class="pill ${CP_PILL[a.estado]}">${CP_EST[a.estado]}</span></td></tr>`);
+  return `<div class="p"><h2>${esc(g.nombre)} <span>elegidas ${fecha(g.inicio)} · ${plazo}</span></h2>
+    <div class="mini4" style="margin-bottom:10px">
+      <div><div class="lbl">Elegidas</div><div class="big ${cls(g.prom)}" style="font-size:20px">${pct(g.prom)}</div></div>
+      <div><div class="lbl">${esc(g.ref_nombre)}</div><div class="big ${cls(g.ref_r)}" style="font-size:20px">${pct(g.ref_r)}</div></div>
+      <div><div class="lbl">Vs. azar</div><div class="big" style="font-size:20px">${g.percentil}</div></div>
+      <div><div class="lbl">Suben</div><div class="big" style="font-size:20px">${g.suben}<span class="small">/${g.acciones.length}</span></div></div>
+    </div>
+    <div class="small" style="margin-bottom:8px">Cono: ${g.dentro} dentro · <span class="up">${g.arriba} arriba</span> · <span class="down">${g.abajo} debajo</span>${g.stops ? ` · ${g.stops} tocaron el stop (respetándolo: <span class="${cls(g.prom_stop)}">${pct(g.prom_stop)}</span>)` : ""} · universo de ${g.universo_n}: <span class="${cls(g.universo_r)}">${pct(g.universo_r)}</span></div>
+    <div style="overflow-x:auto">${tabla([["Acción"], ["Entrada", "r"], ["Hoy", "r"], ["Rend.", "r"], ["Cono"]], filas)}</div></div>`;
+}
+function pintarCheckpoints() {
+  $("cpSub").textContent = CPS.length ? `${CPS.length} anotado${CPS.length > 1 ? "s" : ""} · último ${fecha(CPS[0].fecha)}` : "Todavía no hay checkpoints";
+  if (!CPS.length) { $("cpHist").innerHTML = '<div class="small">Se anotan con checkpoint.py.</div>'; $("cpLista").innerHTML = ""; return; }
+  const ids = ["small", "sp", "ced"], nom = { small: "Small caps", sp: "S&P 500", ced: "CEDEARs" };
+  const celda = g => g ? `<span class="${cls(g.prom)}">${pct(g.prom)}</span> <span class="small">vs ${pct(g.ref_r)} · p${g.percentil}</span>` : "—";
+  $("cpHist").innerHTML = tabla([["Fecha"], ...ids.map(i => [nom[i]])],
+    CPS.map(c => `<tr><td>${fecha(c.fecha)}</td>${ids.map(i => `<td>${celda(c.grupos.find(g => g.id === i))}</td>`).join("")}</tr>`));
+  $("cpLista").innerHTML = CPS.map((c, i) => {
+    const cuerpo = `${c.nota ? `<div class="note" style="margin:0">${esc(c.nota)}</div>` : ""}<div class="grid row2b">${c.grupos.map(cpGrupo).join("")}</div>`;
+    return `<details class="mas"${i === 0 ? " open" : ""}><summary>Checkpoint ${fecha(c.fecha)}</summary><div class="in">${cuerpo}</div></details>`;
+  }).join("");
+}
+pintarCheckpoints();
+
+const TABS = ["resumen", "small", "sp500", "cedears", "balances", "backtest", "checkpoints"];
 function mostrar() {
   const t = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "resumen";
   TABS.forEach(x => { $("t-" + x).hidden = x !== t; });
   document.querySelectorAll(".tabs a").forEach(a => a.getAttribute("href") === "#" + t ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
 }
 addEventListener("hashchange", mostrar); mostrar();
-addEventListener("keydown", e => { if (/^[1-6]$/.test(e.key) && !e.target.closest("input,textarea")) location.hash = TABS[e.key - 1]; });
+addEventListener("keydown", e => { if (/^[1-7]$/.test(e.key) && !e.target.closest("input,textarea")) location.hash = TABS[e.key - 1]; });
 
 function pintarTodo() { pintarResumen(); pintarSmall(); pintarSp(); pintarCed(); }
 pintarTodo();
