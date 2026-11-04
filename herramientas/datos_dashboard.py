@@ -106,6 +106,23 @@ datos["sp"] = {
     "filtros": pd.read_csv(SP / "terminal_filtros.csv").to_dict(orient="records"),
 }
 
+# ---------- CEDEARs: los 10 de mejor puntaje, misma foto que el S&P 500 (cedears/top_cedears.py) ----------
+ced = BASE / "cedears" / "seleccion_cedears.csv"
+if ced.exists():
+    cd = pd.read_csv(ced)
+    tc = cd[cd["top10"] == "sí"].sort_values("puntaje", ascending=False)
+    orden_c = ["universo", "sentimiento", "tecnico", "momentum", "ganancias", "graham", "pasa todo"]
+    texto = lambda x: x if isinstance(x, str) else ""
+    datos["cedears"] = {
+        "fecha": cd["fecha"].max(), "vence": str((pd.Timestamp(cd["fecha"].max()) + pd.Timedelta(days=28)).date()),
+        "total": int(len(cd)), "evaluadas": int(cd["cae_en"].notna().sum()), "pasan": int((cd["cae_en"] == "pasa todo").sum()),
+        "en_sp": int((tc["en_sp500"] == "sí").sum()),
+        "embudo": [{"etapa": e, "n": int((cd["cae_en"] == e).sum())} for e in orden_c if (cd["cae_en"] == e).any()],
+        "top": [{"t": f.ticker, "cedear": f.cedear, "ratio": texto(f.ratio), "e": texto(f.empresa), "sec": texto(f.sector),
+                 "p": f.puntaje, "px": round(f.precio, 2), "piso": f.piso, "techo": f.techo, "bal": texto(f.balance),
+                 "sp": f.en_sp500 == "sí"} for f in tc.itertuples()],
+    }
+
 # ---------- Balances de las próximas dos semanas ----------
 def proximos(nombre, prob):
     b = pd.read_csv(SEG / nombre)

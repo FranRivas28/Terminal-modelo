@@ -149,8 +149,9 @@ details.mas .p { background: var(--bg); }
     <a href="#resumen"><b>1</b>Resumen</a>
     <a href="#small"><b>2</b>Small caps</a>
     <a href="#sp500"><b>3</b>S&amp;P 500</a>
-    <a href="#balances"><b>4</b>Balances</a>
-    <a href="#backtest"><b>5</b>Backtest</a>
+    <a href="#cedears"><b>4</b>CEDEARs</a>
+    <a href="#balances"><b>5</b>Balances</a>
+    <a href="#backtest"><b>6</b>Backtest</a>
   </nav>
 
   <!-- ============ 1. RESUMEN ============ -->
@@ -160,6 +161,7 @@ details.mas .p { background: var(--bg); }
     <div class="grid row2b">
       <div class="p"><h2>Small caps elegidas <span id="resSmallTag"></span></h2><div class="tbl" style="max-height:none;overflow-x:auto" id="resSmall"></div></div>
       <div class="p"><h2>S&amp;P 500 elegidas <span id="resSpTag"></span></h2><div class="tbl" style="max-height:none;overflow-x:auto" id="resSp"></div></div>
+      <div class="p"><h2>CEDEARs elegidos <span id="resCedTag"></span></h2><div class="tbl" style="max-height:none;overflow-x:auto" id="resCed"></div></div>
     </div>
     <div class="leyenda-proy"><span><i style="background:var(--amber);opacity:.3"></i>Rango esperado (proyección)</span><span><i style="height:2px;background:var(--dim)"></i>Precio antes de elegirla</span><span><i style="height:2px;background:var(--up)"></i>Precio desde que se eligió</span><span>Tocá una acción para ver el gráfico grande.</span></div>
     <div class="grid row2b">
@@ -216,7 +218,23 @@ details.mas .p { background: var(--bg); }
     </details>
   </section>
 
-  <!-- ============ 4. BALANCES ============ -->
+  <!-- ============ 4. CEDEARs ============ -->
+  <section class="tab" id="t-cedears">
+    <div class="kflex" style="flex-wrap:wrap"><h1>CEDEARs</h1><span class="sub" id="cedSub"></span></div>
+    <div class="grid kpis" id="cedKpis"></div>
+    <div class="cards" id="cedCards"></div>
+    <div class="note">Los 10 CEDEARs de mejor puntaje del modelo, elegidos el mismo día que el listado del S&amp;P 500 y seguidos desde ahí. Precio en dólares de la acción original (no el del CEDEAR en pesos). La zona ámbar es el rango esperado a 1 mes.</div>
+    <div class="p"><h2>Los 10 en una tabla</h2><div style="overflow-x:auto" id="cedTop"></div></div>
+    <details class="mas">
+      <summary>Más detalle: cómo se eligieron</summary>
+      <div class="in grid row2">
+        <div class="p"><h2>Dónde se caen los demás</h2><div id="cedEmbudo"></div></div>
+        <div class="p"><h2>Cómo se armó la lista</h2><ul class="ins" id="cedComo"></ul></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ 5. BALANCES ============ -->
   <section class="tab" id="t-balances">
     <div class="kflex" style="flex-wrap:wrap"><h1>BALANCES</h1><span class="sub">Próximas dos semanas · el balance mueve el precio más que lo normal</span></div>
     <div class="p"><h2>Tus elegidas que presentan balance <span id="balElegTag"></span></h2><div class="tbl" style="max-height:none" id="balEleg"></div></div>
@@ -288,7 +306,11 @@ const SMALL = D.predicciones.map(p => ({ t: p.ticker, e: p.empresa || "", mercad
   px: p.precio_entrada, ret: p.ret_esperado, banda: p.banda, stop: p.stop, p: p.score, bal: p.balance || "" }));
 const SPL = TOP.map(t => ({ t: t.t, e: t.e, mercado: "sp", inicio: SPD.fecha, vence: SPD.vence, px: t.px, k: Math.log(t.techo / t.px),
   piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, rango: t.rango }));
-const POR = {}; [...SMALL, ...SPL].forEach(e => { POR[e.t] = e; });
+const CD = D.cedears || { top: [], embudo: [], evaluadas: 0, total: 0 };
+const CED = CD.top.map(t => ({ t: t.t, e: t.e, mercado: "ced", inicio: CD.fecha, vence: CD.vence, px: t.px, k: Math.log(t.techo / t.px),
+  piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, sp: t.sp }));
+const POR = {}; [...CED, ...SMALL, ...SPL].forEach(e => { POR[e.t] = e; });
+const MERC = { small: "Small cap", sp: "S&P 500", ced: "CEDEAR" };
 
 function cono(e, f) { // centro, piso y techo esperados cuando pasó la fracción f del plazo (se abre como raíz del tiempo)
   f = Math.max(0, Math.min(1, f));
@@ -361,7 +383,7 @@ function grafico(el, e, { mini = false, medio = false, antes = 20 } = {}) {
   if (!mini && !e.solo) {
     if (e.stop) g += `<line x1="${x(ii)}" x2="${x(iv)}" y1="${y(e.stop)}" y2="${y(e.stop)}" stroke="var(--down)" stroke-dasharray="4 3"/>`;
     if (!medio) {
-      const et = [[fin.hi, e.mercado === "sp" ? "Techo" : "Alto", "var(--up)"], [fin.c, e.mercado === "sp" ? "Medio" : "Objetivo", "var(--amber)"], [fin.lo, e.mercado === "sp" ? "Piso" : "Bajo", "var(--down)"]];
+      const et = [[fin.hi, e.mercado !== "small" ? "Techo" : "Alto", "var(--up)"], [fin.c, e.mercado !== "small" ? "Medio" : "Objetivo", "var(--amber)"], [fin.lo, e.mercado !== "small" ? "Piso" : "Bajo", "var(--down)"]];
       if (e.stop) et.push([e.stop, "Stop", "var(--down)"]);
       et.sort((a, b) => b[0] - a[0]);
       let ultY = -99; et.forEach(([v, n, c]) => { let yy = y(v) + 3; if (yy - ultY < 11) yy = ultY + 11; ultY = yy; g += `<text x="${x(iv) + 4}" y="${yy}" style="fill:${c}">${n} ${num(v)}</text>`; });
@@ -419,7 +441,7 @@ function tarjetas(lista) {
     return `<article class="card" data-t="${limpioT(e.t)}" tabindex="0" aria-label="Ver detalle de ${limpioT(e.t)}">
       <div class="tit"><div style="min-width:0"><b>${limpioT(e.t)}</b><div class="nm" title="${esc(e.e)}">${esc(e.e)}</div></div>
         <div class="px"><div>${st ? num(st.ult.v) : "—"}</div><div class="${st ? cls(st.cambio) : ""}" style="font-size:12px">${st ? pct(st.cambio) : ""}</div></div></div>
-      <div class="kflex">${pill(st)}${e.bal ? `<span class="tag" style="margin:0">BALANCE ${dm(e.bal)}</span>` : ""}${e.cedear ? `<span class="tag" style="margin:0">CEDEAR ${esc(e.cedear)}</span>` : ""}</div>
+      <div class="kflex">${pill(st)}${e.bal ? `<span class="tag" style="margin:0">BALANCE ${dm(e.bal)}</span>` : ""}${e.cedear ? `<span class="tag" style="margin:0">CEDEAR ${esc(e.cedear)}${e.ratio ? " · " + esc(e.ratio) : ""}</span>` : ""}</div>
       <div data-graf="${limpioT(e.t)}"></div>
       <div class="mini4">${datos.map(([k, v]) => `<div><div class="lbl">${k}</div><div>${v}</div></div>`).join("")}</div>
     </article>`;
@@ -432,24 +454,27 @@ function dibujarGraficos(root) {
 
 // ================= 1. Resumen =================
 function pintarResumen() {
-  const a = resumenGrupo(SMALL, "IWM"), b = resumenGrupo(SPL, "SPY"), tot = a.st.length + b.st.length;
+  const a = resumenGrupo(SMALL, "IWM"), b = resumenGrupo(SPL, "SPY"), c = resumenGrupo(CED, "SPY"), tot = a.st.length + b.st.length + c.st.length;
   const ultF = PX.fechas.length ? PX.fechas[PX.fechas.length - 1] : "";
-  $("resSub").textContent = `Elegidas del ${fecha(SMALL[0]?.inicio)} (small) y ${fecha(SPD.fecha)} (S&P) · precios al ${fecha(ultF)}`;
+  $("resSub").textContent = `Elegidas del ${fecha(SMALL[0]?.inicio)} (small) y ${fecha(SPD.fecha)} (S&P y CEDEARs) · precios al ${fecha(ultF)}`;
   $("resKpis").innerHTML = [
     kpi("Small caps elegidas", `<span class="${cls(a.prom)}">${pct(a.prom)}</span>`, `promedio de las ${SMALL.length} · Russell 2000 (IWM) <span class="${cls(a.ref)}">${pct(a.ref)}</span>`),
     kpi("S&P 500 elegidas", `<span class="${cls(b.prom)}">${pct(b.prom)}</span>`, `promedio de las ${SPL.length} · S&P 500 (SPY) <span class="${cls(b.ref)}">${pct(b.ref)}</span>`),
-    kpi("Dentro de lo proyectado", `${a.enRango + b.enRango}<span class="small"> de ${tot}</span>`, `<span class="up">${a.arriba + b.arriba} por encima</span> · <span class="down">${a.abajo + b.abajo} por debajo</span>`),
+    kpi("CEDEARs elegidos", `<span class="${cls(c.prom)}">${pct(c.prom)}</span>`, `promedio de los ${CED.length} · S&P 500 (SPY) <span class="${cls(c.ref)}">${pct(c.ref)}</span>`),
+    kpi("Dentro de lo proyectado", `${a.enRango + b.enRango + c.enRango}<span class="small"> de ${tot}</span>`, `<span class="up">${a.arriba + b.arriba + c.arriba} por encima</span> · <span class="down">${a.abajo + b.abajo + c.abajo} por debajo</span>`),
     kpi("Vencen", `${dm(D.vence_small)} · ${dm(SPD.vence)}`, "small caps a 1 semana · S&P 500 a 1 mes", "am"),
   ].join("");
   $("resSmallTag").textContent = `${SMALL.length} de ${SM.evaluadas} · 1 semana`;
   $("resSmall").innerHTML = listaFilas(SMALL);
   $("resSpTag").textContent = `${SPL.length} de ${SPD.evaluadas} · 1 mes`;
   $("resSp").innerHTML = listaFilas(SPL);
-  const conBal = [...SMALL, ...SPL].filter(e => e.bal).sort((x, y) => x.bal.localeCompare(y.bal));
+  $("resCedTag").textContent = `${CED.length} de ${CD.evaluadas} · 1 mes`;
+  $("resCed").innerHTML = listaFilas(CED);
+  const conBal = [...SMALL, ...SPL, ...CED.filter(e => !SPL.some(x => x.t === e.t))].filter(e => e.bal).sort((x, y) => x.bal.localeCompare(y.bal));
   $("resBalTag").textContent = conBal.length ? `${conBal.length} acciones` : "ninguna";
   $("resBal").innerHTML = conBal.length ? tabla([["Día"], ["Acción"], ["Mercado"], ["Mueve típico", "r"]], conBal.map(e => {
-    const fila = (e.mercado === "sp" ? balSp : balSm).find(r => r.ticker === e.t);
-    return `<tr><td>${fecha(e.bal)}</td><td>${tk(e.t)}</td><td style="color:var(--dim)">${e.mercado === "sp" ? "S&P 500" : "Small cap"}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : "—"}</td></tr>`; }))
+    const fila = (e.mercado === "small" ? balSm : balSp).find(r => r.ticker === e.t);
+    return `<tr><td>${fecha(e.bal)}</td><td>${tk(e.t)}</td><td style="color:var(--dim)">${MERC[e.mercado]}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : "—"}</td></tr>`; }))
     : `<div class="small">Ninguna de las elegidas presenta balance antes de vencer.</div>`;
   $("resProbado").innerHTML = [
     `<b>Small caps:</b> en la prueba histórica el modelo no le ganó a elegir al azar de la misma lista. Por eso se sigue en papel, semana a semana.`,
@@ -529,14 +554,41 @@ function pintarSp() {
   $("spFiltros").innerHTML = SPD.filtros.map(f => `<div class="fbar" style="grid-template-columns:minmax(0,150px) minmax(0,1fr) 70px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(f.filtro)}">${esc(f.filtro)}</span><div class="track"><div class="mid"></div><div class="v" style="${f.dif_1m >= 0 ? "left:50%" : "right:50%"};width:${Math.abs(f.dif_1m) / mx * 50}%;background:${f.dif_1m >= 0 ? "var(--up)" : "var(--down)"}"></div></div><span class="${cls(f.dif_1m)}" style="text-align:right">${f.dif_1m > 0 ? "+" : ""}${num(f.dif_1m)} pp</span></div>`).join("");
 }
 
-// ================= 4. Balances =================
+// ================= 4. CEDEARs =================
+function pintarCed() {
+  const c = resumenGrupo(CED, "SPY");
+  $("cedSub").textContent = `${CED.length} elegidos de ${CD.evaluadas} · ${fecha(CD.fecha)} · vencen ${fecha(CD.vence)}`;
+  $("cedKpis").innerHTML = [
+    kpi("Promedio desde la elección", `<span class="${cls(c.prom)}">${pct(c.prom)}</span>`, `S&P 500 (SPY): <span class="${cls(c.ref)}">${pct(c.ref)}</span>`),
+    kpi("Suben", `${c.suben}<span class="small"> de ${c.st.length}</span>`, "precio de hoy sobre el de la elección", "up"),
+    kpi("Dentro de lo proyectado", `${c.enRango}<span class="small"> de ${c.st.length}</span>`, `<span class="up">${c.arriba} arriba</span> · <span class="down">${c.abajo} abajo</span>`),
+    kpi("Fuera del S&P 500", CED.filter(e => !e.sp).length, "empresas que no están en la lista del S&P"),
+  ].join("");
+  $("cedCards").innerHTML = tarjetas(CED);
+  dibujarGraficos($("cedCards"));
+  $("cedTop").innerHTML = tabla([["CEDEAR"], ["Acción"], ["Empresa"], ["Puntaje", "r"], ["Elegida a", "r"], ["Hoy", "r"], ["Piso", "r"], ["Techo", "r"], ["Balance"], ["Ratio"]],
+    CED.map(e => { const st = estado(e);
+      return `<tr><td><b>${esc(e.cedear)}</b></td><td>${tk(e.t)}</td><td>${esc(e.e)}${e.sp ? '<span class="tag">S&P</span>' : ""}</td><td class="r am">${num(e.p)}</td><td class="r">${num(e.px)}</td><td class="r ${st ? cls(st.cambio) : ""}">${st ? num(st.ult.v) : "—"}</td><td class="r">${num(e.piso)}</td><td class="r">${num(e.techo)}</td><td>${e.bal ? fecha(e.bal) : '<span style="color:var(--dim)">—</span>'}</td><td style="color:var(--dim)">${esc(e.ratio || "—")}</td></tr>`; }));
+}
+{
+  const nombres = { sentimiento: "Sentimiento", tecnico: "Técnico", momentum: "Momentum", ganancias: "Ganancias", graham: "Graham", universo: "Liquidez", "pasa todo": "Pasan todo" };
+  $("cedEmbudo").innerHTML = hBar(CD.embudo.map(e => ({ n: (e.etapa === "pasa todo" ? "" : "Caen en ") + (nombres[e.etapa] || e.etapa), v: e.n, c: e.etapa === "pasa todo" ? "var(--up)" : "var(--dim)" })));
+  $("cedComo").innerHTML = [
+    `Se tomaron los ${CD.total} CEDEARs de acciones que cotizan en EE.UU. (sin ETFs ni acciones de Brasil o Europa). ${CD.evaluadas} tenían datos suficientes.`,
+    `Se les pasó la misma cascada que al S&P 500 (sentimiento, técnico, momentum contra SPY, ganancias, Graham), sin el filtro de tamaño.`,
+    `De las ${CD.pasan} que pasan todo, se muestran las 10 de mejor puntaje. ${CD.en_sp} de esas 10 están también en el S&P 500.`,
+    `Igual que en el S&P 500: el puntaje ayudó algo en la prueba de 10 meses, pero todavía sin firmeza estadística.`,
+  ].map(t => `<li>${t}</li>`).join("");
+}
+
+// ================= 5. Balances =================
 {
   const aviso = h => B.aviso.find(a => a.h === h && a.hay_balance === true), sin = h => B.aviso.find(a => a.h === h && a.hay_balance === false);
-  const eleg = [...SMALL, ...SPL].map(e => ({ e, fila: (e.mercado === "sp" ? balSp : balSm).find(r => r.ticker === e.t) })).filter(x => x.fila || x.e.bal)
+  const eleg = [...SMALL, ...SPL, ...CED.filter(e => !SPL.some(x => x.t === e.t))].map(e => ({ e, fila: (e.mercado === "small" ? balSm : balSp).find(r => r.ticker === e.t) })).filter(x => x.fila || x.e.bal)
     .sort((x, y) => (x.fila?.fecha || x.e.bal).localeCompare(y.fila?.fecha || y.e.bal));
-  $("balElegTag").textContent = `${eleg.length} de ${SMALL.length + SPL.length}`;
+  $("balElegTag").textContent = `${eleg.length} de ${SMALL.length + SPL.length + CED.length}`;
   $("balEleg").innerHTML = eleg.length ? tabla([["Día"], ["Acción"], ["Mercado"], ["Superó antes"], ["Prob. superar", "r"], ["Mueve típico", "r"]], eleg.map(({ e, fila }) =>
-    `<tr><td>${fecha(fila?.fecha || e.bal)}</td><td>${tk(e.t)}</td><td style="color:var(--dim)">${e.mercado === "sp" ? "S&P 500" : "Small cap"}</td><td>${esc(fila?.["superó_antes"] || "—")}</td><td class="r">${fila ? pct(fila.prob_superar, 0, false) : "—"}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : "—"}</td></tr>`))
+    `<tr><td>${fecha(fila?.fecha || e.bal)}</td><td>${tk(e.t)}</td><td style="color:var(--dim)">${MERC[e.mercado]}</td><td>${esc(fila?.["superó_antes"] || "—")}</td><td class="r">${fila ? pct(fila.prob_superar, 0, false) : "—"}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : "—"}</td></tr>`))
     : `<div class="small">Ninguna de las elegidas presenta balance en las próximas dos semanas.</div>`;
   $("balKpis").innerHTML = [
     kpi("Se sale del rango (1 sem.)", pct(aviso("1s").fuera_de_rango, 0, false), `con balance · sin balance ${pct(sin("1s").fuera_de_rango, 0, false)}`, "am"),
@@ -558,7 +610,7 @@ function pintarSp() {
   dibujaBal("sp");
 }
 
-// ================= 5. Backtest =================
+// ================= 6. Backtest =================
 const S = D.semanal, n = S.length, I = D.insights;
 let W = 520, H = 200; const M = { l: 40, r: 10, t: 10, b: 22 };
 function escalas(vals, cnt) {
@@ -622,20 +674,20 @@ $("ins").innerHTML = [
 }
 
 // ================= navegación =================
-const TABS = ["resumen", "small", "sp500", "balances", "backtest"];
+const TABS = ["resumen", "small", "sp500", "cedears", "balances", "backtest"];
 function mostrar() {
   const t = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "resumen";
   TABS.forEach(x => { $("t-" + x).hidden = x !== t; });
   document.querySelectorAll(".tabs a").forEach(a => a.getAttribute("href") === "#" + t ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
 }
 addEventListener("hashchange", mostrar); mostrar();
-addEventListener("keydown", e => { if (/^[1-5]$/.test(e.key) && !e.target.closest("input,textarea")) location.hash = TABS[e.key - 1]; });
+addEventListener("keydown", e => { if (/^[1-6]$/.test(e.key) && !e.target.closest("input,textarea")) location.hash = TABS[e.key - 1]; });
 
-function pintarTodo() { pintarResumen(); pintarSmall(); pintarSp(); }
+function pintarTodo() { pintarResumen(); pintarSmall(); pintarSp(); pintarCed(); }
 pintarTodo();
 
 // ================= cinta de precios y tiempo real =================
-const RELOJ = [...new Set(["SPY", "IWM", ...SMALL.map(e => e.t), ...SPL.map(e => e.t)])];
+const RELOJ = [...new Set(["SPY", "IWM", ...SMALL.map(e => e.t), ...SPL.map(e => e.t), ...CED.map(e => e.t)])];
 const ultimo = t => { const c = PX.cierres[t]; if (!c) return null; const v = c.filter(x => x != null); return { p: v[v.length - 1], pc: v[v.length - 2] }; };
 const cot = t => VIVO[t] || ultimo(t);
 function dibujaTape(cambiados = []) {
@@ -671,7 +723,7 @@ function detalle(t, foco = true) {
   abierta = t;
   const e = POR[t], q = cot(t), ops = D.operaciones.filter(o => o.t === t);
   const bal = balSp.concat(balSm).find(x => x.ticker === t);
-  let html = `<div class="kflex"><div><div class="lbl">${e ? (e.mercado === "sp" ? "S&P 500 · elegida" : "Small cap · elegida") : "Acción"}</div><div class="big">${limpioT(t)}</div><div class="small">${esc(e ? e.e : "")}</div></div><button type="button" class="x" id="cerrar">Cerrar ✕</button></div>`;
+  let html = `<div class="kflex"><div><div class="lbl">${e ? MERC[e.mercado] + " · elegida" : "Acción"}</div><div class="big">${limpioT(t)}</div><div class="small">${esc(e ? e.e : "")}</div></div><button type="button" class="x" id="cerrar">Cerrar ✕</button></div>`;
   if (q) { const ch = q.p / q.pc - 1;
     html += `<div class="kflex"><div class="big" style="font-size:32px">${num(q.p)}</div><div class="${cls(ch)}" style="font-size:16px">${pct(ch, 2)} hoy</div><span class="chip live ${VIVO[t] ? "on" : ""}"><i></i>${VIVO[t] ? "En vivo" : "Cierre"}</span></div>`; }
   if (e) {
