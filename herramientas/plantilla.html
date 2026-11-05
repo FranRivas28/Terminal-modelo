@@ -124,6 +124,10 @@ footer { color: var(--dim); font-size: 11px; border-top: 1px solid var(--line); 
 .pill.abajo { border-color: var(--down); color: var(--down); }
 .pill.stop { background: var(--down); border-color: var(--down); color: #000; }
 .lista { table-layout: fixed; }
+.wrapt td { white-space: normal; }
+table.pres tr.dia td { background: #17140f; color: var(--amber); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding-top: 9px; }
+table.pres tr.dia td b { color: var(--fg); }
+@media (max-width: 600px) { table.pres th:nth-child(2), table.pres td:nth-child(2):not([colspan]) { display: none; } table.pres th, table.pres td { padding-inline: 4px; } }
 .lista td { vertical-align: middle; }
 .lista td:first-child { overflow: hidden; }
 .lista th:nth-child(2) { width: 34%; }
@@ -249,14 +253,22 @@ details.mas .p { background: var(--bg); }
 
   <!-- ============ 5. BALANCES ============ -->
   <section class="tab" id="t-balances">
-    <div class="kflex" style="flex-wrap:wrap"><h1>BALANCES</h1><span class="sub">Próximas dos semanas · el balance mueve el precio más que lo normal</span></div>
-    <div class="p"><h2>Tus elegidas que presentan balance <span id="balElegTag"></span></h2><div class="tbl" style="max-height:none" id="balEleg"></div></div>
-    <div class="grid row4" id="balKpis"></div>
+    <div class="kflex" style="flex-wrap:wrap"><h1>BALANCES</h1><span class="sub" id="balSub">Los que ya presentaron y los que vienen</span></div>
+    <div class="grid row2b">
+      <div class="p"><h2>Tus elegidas · ya presentaron <span id="beYaTag"></span></h2><div id="beYa"></div></div>
+      <div class="p"><h2>Tus elegidas · por presentar <span id="beProxTag"></span></h2><div id="beProx"></div></div>
+    </div>
+    <div class="kflex" style="flex-wrap:wrap;margin-top:6px"><h1>TODOS LOS BALANCES</h1><span class="seg balSeg" role="group" aria-label="Mercado"><button type="button" data-b="sp" aria-pressed="true">S&amp;P 500</button><button type="button" data-b="small" aria-pressed="false">Small caps</button></span></div>
+    <div class="grid kpis" id="presKpis"></div>
+    <div class="p" id="presBloque"><h2>Ya presentaron, día por día <span class="seg" id="presFiltro" role="group" aria-label="Filtro"><button type="button" data-f="todos" aria-pressed="true">Todos</button><button type="button" data-f="sí" aria-pressed="false">Superaron</button><button type="button" data-f="no" aria-pressed="false">No superaron</button></span></h2>
+      <div class="tbl" style="max-height:620px" id="presTabla"></div>
+      <div class="note">Reacción: del último cierre antes del balance al cierre del primer día en que el mercado lo pudo operar (si presentó antes de abrir, ese mismo día; si fue después de cerrar, el día siguiente). Abajo, cuánto se movió el índice esos mismos días: si la acción se movió mucho más, fue por el balance. Dentro de cada día, de la que más subió a la que más bajó.</div></div>
     <div class="grid row2">
-      <div class="p"><h2>Calendario completo <span class="seg" id="balSeg"><button type="button" id="balSp" aria-pressed="true">S&amp;P 500</button><button type="button" id="balSmall" aria-pressed="false">Small caps</button></span></h2><div class="tbl" style="max-height:460px" id="balTabla"></div></div>
+      <div class="p"><h2>Próximos <span id="proxTag"></span></h2><div class="tbl" style="max-height:460px" id="balTabla"></div></div>
       <div class="p"><h2>Superar según su historial <span id="balProbTag"></span></h2><div id="balProb"></div>
         <div class="note">Superar lo esperado no anticipa si la acción sube: eso salió parejo en la prueba. Sirve para saber que se va a mover más.</div></div>
     </div>
+    <div class="grid row4" id="balKpis"></div>
   </section>
 
   <!-- ============ 5. BACKTEST ============ -->
@@ -325,6 +337,15 @@ const dias = (a, b) => (new Date(b + "T12:00:00Z") - new Date(a + "T12:00:00Z"))
 function niceStep(s) { const p = 10 ** Math.floor(Math.log10(s)); return [1, 2, 2.5, 5, 10].map(k => k * p).find(k => k >= s); }
 
 const K = D.kpi, SM = D.small, SPD = D.sp, B = D.balances, TOP = SPD.top, balSp = B.sp.filas, balSm = B.small.filas;
+// balances ya presentados (resultados_balances.py): si superó lo esperado y cuánto se movió la acción
+const RESB = (B.resultados || []).slice().sort((a, b) => b.fecha.localeCompare(a.fecha) || Math.abs(b.reaccion ?? 0) - Math.abs(a.reaccion ?? 0));
+function resDe(t, f) {
+  const r = RESB.filter(x => x.ticker === t); if (!f) return r[0] || null;
+  return r.find(x => x.fecha === f) || r.find(x => Math.abs(dias(x.fecha, f)) <= 3) || null;
+}
+const pillRes = r => !r ? "" : r.supero === "sí" ? `<span class="pill arriba">Superó</span>` : r.supero === "no" ? `<span class="pill abajo">No superó</span>` : `<span class="pill">Presentó</span>`;
+const reac = r => !r ? "—" : r.reaccion == null ? `<span class="small" style="margin:0">esperando</span>` : `<span class="${cls(r.reaccion)}">${pct(r.reaccion)}</span>`;
+const resCorto = r => r ? `${pillRes(r)} ${reac(r)}` : `<span class="pill">Pendiente</span>`;
 const PX = D.precios || { fechas: [], cierres: {} };
 const VIVO = {}; // cotizaciones de /api/cotizaciones (solo en Vercel)
 $("act").textContent = `Actualizado ${fecha(D.actualizado)}`;
@@ -500,12 +521,14 @@ function pintarResumen() {
   $("resSp").innerHTML = listaFilas(SPL);
   $("resCedTag").textContent = plazoTag(CED, `${CED.length} de ${CD.evaluadas} · 1 mes`);
   $("resCed").innerHTML = listaFilas(CED);
-  const conBal = [...SMALL, ...SPL, ...CED.filter(e => !SPL.some(x => x.t === e.t))].filter(e => e.bal).sort((x, y) => x.bal.localeCompare(y.bal));
-  $("resBalTag").textContent = conBal.length ? `${conBal.length} acciones` : "ninguna";
-  $("resBal").innerHTML = conBal.length ? tabla([["Día"], ["Acción"], ["Mercado"], ["Mueve típico", "r"]], conBal.map(e => {
-    const fila = (e.mercado === "small" ? balSm : balSp).find(r => r.ticker === e.t);
-    return `<tr><td>${fecha(e.bal)}</td><td>${tk(e.t)}</td><td style="color:var(--dim)">${MERC[e.mercado]}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : "—"}</td></tr>`; }))
-    : `<div class="small">Ninguna de las elegidas presenta balance antes de vencer.</div>`;
+  const ELEGB = [...SMALL, ...SPL, ...CED.filter(e => !SPL.some(x => x.t === e.t))].map(e => {
+    const fila = (e.mercado === "small" ? balSm : balSp).find(r => r.ticker === e.t), r = resDe(e.t), f = r ? r.fecha : fila?.fecha || e.bal;
+    return { e, fila, r, f };
+  }).filter(x => x.r || (x.f && x.f >= D.actualizado)).sort((a, b) => !!b.r - !!a.r || (a.r ? b.f.localeCompare(a.f) : a.f.localeCompare(b.f)));
+  $("resBalTag").textContent = ELEGB.length ? `${ELEGB.filter(x => x.r).length} presentaron · ${ELEGB.filter(x => !x.r).length} por presentar` : "ninguna";
+  $("resBal").innerHTML = ELEGB.length ? tabla([["Día"], ["Acción"], ["Resultado"], ["Mueve típico", "r"]], ELEGB.map(({ e, fila, r, f }) =>
+    `<tr><td>${fecha(f)}</td><td>${tk(e.t)}<div class="small" style="margin:0">${MERC[e.mercado]}</div></td><td>${resCorto(r)}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : r?.mov_tipico_pct != null ? "±" + num(r.mov_tipico_pct, 1) + "%" : "—"}</td></tr>`))
+    : `<div class="small">Ninguna de las elegidas tiene balance en estas semanas.</div>`;
   $("resProbado").innerHTML = [
     `<b>Small caps:</b> en la prueba histórica el modelo no le ganó a elegir al azar de la misma lista. Por eso se sigue en papel, semana a semana.`,
     `<b>S&P 500:</b> las elegidas rindieron algo más que el resto en 10 meses, pero todavía sin firmeza estadística.`,
@@ -614,30 +637,72 @@ function pintarCed() {
 // ================= 5. Balances =================
 {
   const aviso = h => B.aviso.find(a => a.h === h && a.hay_balance === true), sin = h => B.aviso.find(a => a.h === h && a.hay_balance === false);
-  const eleg = [...SMALL, ...SPL, ...CED.filter(e => !SPL.some(x => x.t === e.t))].map(e => ({ e, fila: (e.mercado === "small" ? balSm : balSp).find(r => r.ticker === e.t) })).filter(x => x.fila || x.e.bal)
-    .sort((x, y) => (x.fila?.fecha || x.e.bal).localeCompare(y.fila?.fecha || y.e.bal));
-  $("balElegTag").textContent = `${eleg.length} de ${SMALL.length + SPL.length + CED.length}`;
-  $("balEleg").innerHTML = eleg.length ? tabla([["Día"], ["Acción"], ["Mercado"], ["Superó antes"], ["Prob. superar", "r"], ["Mueve típico", "r"]], eleg.map(({ e, fila }) =>
-    `<tr><td>${fecha(fila?.fecha || e.bal)}</td><td>${tk(e.t)}</td><td style="color:var(--dim)">${MERC[e.mercado]}</td><td>${esc(fila?.["superó_antes"] || "—")}</td><td class="r">${fila ? pct(fila.prob_superar, 0, false) : "—"}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : "—"}</td></tr>`))
+  const HOY = PX.fechas.length ? PX.fechas[PX.fechas.length - 1] : D.actualizado;
+  const DIAS_S = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  const diaNom = f => DIAS_S[new Date(f + "T12:00:00Z").getUTCDay()] + " " + dm(f);
+  const nombreT = t => POR[t] ? tk(t) + '<span class="tag">ELEGIDA</span>' : PX.cierres[t] ? tk(t) : `<b>${esc(t)}</b>`;
+  const tip = r => r.mov_tipico_pct != null ? ` · típico ±${num(r.mov_tipico_pct, 1)}%` : "";
+  const celdaReac = r => `<td class="r" style="font-weight:600">${reac(r)}<div class="small" style="margin:0;font-weight:400">${r.reaccion == null ? (r.dia_reaccion || "cierre del próximo día") : `${r.indice} ${pct(r.reaccion_indice)}${tip(r)}`}</div></td>`;
+  const celdaEps = r => `<td class="r">${num(r.eps_estimado)} → ${num(r.eps_real)}${r.sorpresa_pct != null ? `<div class="small ${cls(r.sorpresa_pct)}" style="margin:0">${r.sorpresa_pct > 0 ? "+" : ""}${num(r.sorpresa_pct, 0)}% vs. esperado</div>` : ""}</td>`;
+  const hastaHoy = r => `<td class="r ${cls(r.hasta_hoy)}">${r.reaccion == null || r.hasta_hoy == null ? "—" : pct(r.hasta_hoy)}</td>`;
+  const porReac = (a, b) => (b.reaccion ?? -9) - (a.reaccion ?? -9);
+  $("balSub").textContent = `Los que ya presentaron (desde el ${fecha(RESB.length ? RESB.reduce((m, r) => r.fecha < m ? r.fecha : m, RESB[0].fecha) : HOY)}) y los de las próximas dos semanas`;
+
+  // ---- tus elegidas
+  const ELEG = [...SMALL, ...SPL, ...CED.filter(e => !SPL.some(x => x.t === e.t))];
+  const ya = ELEG.map(e => ({ e, r: resDe(e.t) })).filter(x => x.r).sort((a, b) => b.r.fecha.localeCompare(a.r.fecha) || porReac(a.r, b.r));
+  $("beYaTag").textContent = `${ya.length} de ${ELEG.length}`;
+  $("beYa").innerHTML = ya.length ? tabla([["Acción"], ["Resultado"], ["Reacción", "r"], ["Hasta hoy", "r"]], ya.map(({ e, r }) =>
+    `<tr><td>${tk(e.t)}<div class="small" style="margin:0">${diaNom(r.fecha)}</div>${r.fecha < e.inicio ? '<div class="small" style="margin:0">antes de elegirla</div>' : ""}</td><td>${pillRes(r)}${r.sorpresa_pct != null ? `<div class="small" style="margin:0">${r.sorpresa_pct > 0 ? "+" : ""}${num(r.sorpresa_pct, 0)}% vs. esperado</div>` : ""}</td>${celdaReac(r)}${hastaHoy(r)}</tr>`), "wrapt")
+    : `<div class="small">Ninguna de las elegidas presentó balance en las últimas semanas.</div>`;
+  const prox = ELEG.map(e => ({ e, fila: (e.mercado === "small" ? balSm : balSp).find(b => b.ticker === e.t) })).map(x => ({ ...x, f: x.fila?.fecha || x.e.bal }))
+    .filter(x => x.f && x.f >= D.actualizado && !resDe(x.e.t, x.f)).sort((a, b) => a.f.localeCompare(b.f));
+  $("beProxTag").textContent = `${prox.length} de ${ELEG.length}`;
+  $("beProx").innerHTML = prox.length ? tabla([["Día"], ["Acción"], ["Prob. superar", "r"], ["Mueve típico", "r"]], prox.map(({ e, fila, f }) =>
+    `<tr><td>${diaNom(f)}<div class="small" style="margin:0">${esc(fila?.hora || "")}</div></td><td>${tk(e.t)}<div class="small" style="margin:0">${MERC[e.mercado]}</div></td><td class="r">${fila ? pct(fila.prob_superar, 0, false) : "—"}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : "—"}</td></tr>`), "wrapt")
     : `<div class="small">Ninguna de las elegidas presenta balance en las próximas dos semanas.</div>`;
-  $("balKpis").innerHTML = [
-    kpi("Se sale del rango (1 sem.)", pct(aviso("1s").fuera_de_rango, 0, false), `con balance · sin balance ${pct(sin("1s").fuera_de_rango, 0, false)}`, "am"),
-    kpi("Movimiento típico (1 sem.)", `${num(aviso("1s").movimiento_medio / sin("1s").movimiento_medio, 1)}x`, "con balance vs. sin balance"),
-    kpi("S&P 500 en 2 semanas", balSp.length, "presentan balance"),
-    kpi("Small caps en 2 semanas", balSm.length, "presentan balance"),
-  ].join("");
-  function dibujaBal(cual) {
-    const filas = cual === "sp" ? balSp : balSm;
-    $("balSp").setAttribute("aria-pressed", cual === "sp"); $("balSmall").setAttribute("aria-pressed", cual !== "sp");
-    $("balTabla").innerHTML = tabla([["Día"], ["Hora"], ["Acción"], ["Superó antes"], ["Prob. superar", "r"], ["Mueve típico", "r"]],
-      filas.map(b => `<tr><td>${fecha(b.fecha)}</td><td style="color:var(--dim)">${esc(b.hora || "—")}</td><td>${POR[b.ticker] ? tk(b.ticker) + '<span class="tag">ELEGIDA</span>' : PX.cierres[b.ticker] ? tk(b.ticker) : esc(b.ticker)}</td><td>${esc(b["superó_antes"])}</td><td class="r ${b.prob_superar >= .75 ? "up" : b.prob_superar < .55 ? "down" : ""}">${pct(b.prob_superar, 0, false)}</td><td class="r am">±${num(b.movimiento_tipico_pct, 1)}%</td></tr>`));
-    const pr = (cual === "sp" ? B.sp : B.small).prob;
-    $("balProbTag").textContent = cual === "sp" ? "S&P 500" : "small caps";
+
+  // ---- todos: resumen, día por día y próximos
+  let mercado = "sp", filtro = "todos";
+  function dibujaBal() {
+    document.querySelectorAll(".balSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.b === mercado));
+    document.querySelectorAll("#presFiltro button").forEach(b => b.setAttribute("aria-pressed", b.dataset.f === filtro));
+    const todos = RESB.filter(r => r.mercado === mercado), conR = todos.filter(r => r.reaccion != null), conS = todos.filter(r => r.supero);
+    const prom = (a, f) => a.length ? a.reduce((s, x) => s + f(x), 0) / a.length : null;
+    const esper = prom(conS.filter(r => r.prob_superar != null), r => r.prob_superar), tipico = prom(conR.filter(r => r.mov_tipico_pct != null), r => r.mov_tipico_pct);
+    const sup = conS.filter(r => r.supero === "sí").length, sube = conR.filter(r => r.reaccion > 0).length;
+    $("presKpis").innerHTML = [
+      kpi("Presentaron", todos.length, `${conR.length < todos.length ? `${todos.length - conR.length} esperan el cierre para medir la reacción` : "todas con reacción medida"}`),
+      kpi("Superaron lo esperado", pct(sup / (conS.length || 1), 0, false), `${sup} de ${conS.length}${esper != null ? ` · el historial anticipaba ${pct(esper, 0, false)}` : ""}`),
+      kpi("Subieron el día", conR.length ? pct(sube / conR.length, 0, false) : "—", `${sube} de ${conR.length} · superar no asegura subir`),
+      kpi("Cuánto se movieron", conR.length ? "±" + num(100 * prom(conR, r => Math.abs(r.reaccion)), 1) + "%" : "—", tipico != null ? `en promedio, para arriba o abajo · típico ±${num(tipico, 1)}%` : ""),
+    ].join("");
+    const lista = todos.filter(r => filtro === "todos" || r.supero === filtro);
+    const dias = [...new Set(lista.map(r => r.fecha))].sort().reverse();
+    $("presTabla").innerHTML = lista.length ? `<table class="pres wrapt"><thead><tr><th>Acción</th><th class="r">Ganancia esperada → real</th><th>Resultado</th><th class="r">Reacción</th><th class="r">Hasta hoy</th></tr></thead><tbody>${dias.map(f => {
+      const del = lista.filter(r => r.fecha === f).sort(porReac), dr = del.filter(r => r.reaccion != null), ds = del.filter(r => r.supero);
+      return `<tr class="dia"><td colspan="5"><b>${diaNom(f)}</b> · ${del.length} presentaron${filtro === "todos" && ds.length ? ` · superaron ${pct(ds.filter(r => r.supero === "sí").length / ds.length, 0, false)}` : ""}${dr.length ? ` · subieron ${dr.filter(r => r.reaccion > 0).length} de ${dr.length}` : " · reacción al próximo cierre"}</td></tr>` +
+        del.map(r => `<tr><td>${nombreT(r.ticker)}<div class="small" style="margin:0">${esc(r.hora || "sin hora")}</div></td>${celdaEps(r)}<td>${pillRes(r)}</td>${celdaReac(r)}${hastaHoy(r)}</tr>`).join("");
+    }).join("")}</tbody></table>` : `<div class="small">No hay balances presentados con este filtro (se calculan con resultados_balances.py).</div>`;
+    const futuros = (mercado === "sp" ? balSp : balSm).filter(b => b.fecha >= D.actualizado && !resDe(b.ticker, b.fecha));
+    $("proxTag").textContent = `${futuros.length} acciones`;
+    $("balTabla").innerHTML = futuros.length ? tabla([["Día"], ["Acción"], ["Superó antes"], ["Prob. superar", "r"], ["Mueve típico", "r"]],
+      futuros.map(b => `<tr><td>${diaNom(b.fecha)}<div class="small" style="margin:0">${esc(b.hora || "")}</div></td><td>${nombreT(b.ticker)}</td><td>${esc(b["superó_antes"])}</td><td class="r ${b.prob_superar >= .75 ? "up" : b.prob_superar < .55 ? "down" : ""}">${pct(b.prob_superar, 0, false)}</td><td class="r am">±${num(b.movimiento_tipico_pct, 1)}%</td></tr>`))
+      : `<div class="small">No hay balances por venir en el calendario guardado.</div>`;
+    const pr = (mercado === "sp" ? B.sp : B.small).prob;
+    $("balProbTag").textContent = mercado === "sp" ? "S&P 500" : "small caps";
     $("balProb").innerHTML = pr.map(r => `<div class="fbar" style="grid-template-columns:110px minmax(0,1fr) 90px"><span>${esc(r["superó_antes"])}</span><div class="track"><div class="v" style="left:0;width:${r.tasa_superar * 100}%;background:var(--blue)"></div></div><span style="text-align:right">${pct(r.tasa_superar, 0, false)} <small style="color:var(--dim)">${r.casos}</small></span></div>`).join("") +
       `<div class="note">De los últimos 4 balances, cuántos superó lo esperado. El número chico es la cantidad de casos.</div>`;
   }
-  $("balSp").onclick = () => dibujaBal("sp"); $("balSmall").onclick = () => dibujaBal("small");
-  dibujaBal("sp");
+  $("balKpis").innerHTML = [
+    kpi("Se sale del rango (1 sem.)", pct(aviso("1s").fuera_de_rango, 0, false), `con balance · sin balance ${pct(sin("1s").fuera_de_rango, 0, false)}`, "am"),
+    kpi("Movimiento típico (1 sem.)", `${num(aviso("1s").movimiento_medio / sin("1s").movimiento_medio, 1)}x`, "con balance vs. sin balance"),
+    kpi("S&P 500 por presentar", balSp.filter(b => b.fecha >= D.actualizado && !resDe(b.ticker, b.fecha)).length, "próximas dos semanas"),
+    kpi("Small caps por presentar", balSm.filter(b => b.fecha >= D.actualizado && !resDe(b.ticker, b.fecha)).length, "próximas dos semanas"),
+  ].join("");
+  document.querySelector(".balSeg").onclick = ev => { const b = ev.target.closest("button"); if (b) { mercado = b.dataset.b; dibujaBal(); } };
+  $("presFiltro").onclick = ev => { const b = ev.target.closest("button"); if (b) { filtro = b.dataset.f; dibujaBal(); } };
+  dibujaBal();
 }
 
 // ================= 6. Backtest =================
@@ -846,10 +911,12 @@ function detalle(t, foco = true) {
     if (e.cedear) kv.push(["CEDEAR", esc(e.cedear)]);
     if (bal) kv.push(["Balance", fecha(bal.fecha)], ["Prob. superar", pct(bal.prob_superar, 0, false)], ["Mueve típico", "±" + num(bal.movimiento_tipico_pct, 1) + "%"]);
     else if (e.bal) kv.push(["Balance", fecha(e.bal)]);
+    const rb = (bal?.fecha || e.bal) && resDe(t, bal?.fecha || e.bal);
+    if (rb) kv.push(["Resultado del balance", pillRes(rb)], ["Reacción al balance", reac(rb)]);
     html += `<div class="kv">${kv.map(([k, v]) => `<div><div class="lbl">${k}</div><div>${v}</div></div>`).join("")}</div>`;
   } else if (PX.cierres[t]) {
     html += `<div class="kflex"><span class="lbl">Precio diario, 6 meses</span></div><div id="dChart"></div>`;
-    if (bal) html += `<div class="kv"><div><div class="lbl">Balance</div><div>${fecha(bal.fecha)}</div></div><div><div class="lbl">Prob. superar</div><div>${pct(bal.prob_superar, 0, false)}</div></div><div><div class="lbl">Mueve típico</div><div>±${num(bal.movimiento_tipico_pct, 1)}%</div></div></div>`;
+    if (bal) html += `<div class="kv"><div><div class="lbl">Balance</div><div>${fecha(bal.fecha)}</div></div><div><div class="lbl">Prob. superar</div><div>${pct(bal.prob_superar, 0, false)}</div></div><div><div class="lbl">Mueve típico</div><div>±${num(bal.movimiento_tipico_pct, 1)}%</div></div>${(r => r ? `<div><div class="lbl">Resultado</div><div>${pillRes(r)}</div></div><div><div class="lbl">Reacción</div><div>${reac(r)}</div></div>` : "")(resDe(t, bal.fecha))}</div>`;
   } else html += `<div class="small">Sin historial de precios para esta acción.</div>`;
   if (ops.length) { const sum = ops.reduce((a, o) => a + o.r, 0); html += `<ul class="ins"><li>En el backtest se eligió ${ops.length} ${ops.length === 1 ? "vez" : "veces"}: suma <span class="${cls(sum)}">${pct(sum)}</span>.</li></ul>`; }
   const dr = $("drawer"); dr.innerHTML = html; dr.hidden = false;

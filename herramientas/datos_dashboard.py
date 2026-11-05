@@ -133,6 +133,15 @@ datos["balances"] = {"sp": proximos("proximos_balances.csv", "probabilidad_super
                      "small": proximos("proximos_balances_small.csv", "probabilidad_superar_small.csv"),
                      "aviso": pd.read_csv(SP / "aviso_balance_sp500.csv").to_dict(orient="records")}
 
+# ---------- Balances ya presentados: resultado y reacción del precio (resultados_balances.py) ----------
+rb = SEG / "resultados_balances.csv"
+if rb.exists():
+    r = pd.read_csv(rb)
+    r = r[pd.to_datetime(r["fecha"]) >= pd.Timestamp.today().normalize() - pd.Timedelta(days=28)]
+    datos["balances"]["resultados"] = r[["ticker", "fecha", "hora", "mercado", "prob_superar", "mov_tipico_pct", "eps_estimado",
+                                         "eps_real", "supero", "sorpresa_pct", "dia_reaccion", "reaccion", "indice",
+                                         "reaccion_indice", "hasta_hoy"]].astype(object).where(r.notna(), None).to_dict(orient="records")
+
 # ---------- Checkpoints: foto de cómo vienen las elegidas, uno por fecha (checkpoint.py) ----------
 cps = BASE / "checkpoints" / "checkpoints.json"
 datos["checkpoints"] = json.loads(cps.read_text()) if cps.exists() else []
