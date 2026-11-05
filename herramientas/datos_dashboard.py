@@ -137,7 +137,7 @@ datos["balances"] = {"sp": proximos("proximos_balances.csv", "probabilidad_super
 rb = SEG / "resultados_balances.csv"
 if rb.exists():
     r = pd.read_csv(rb)
-    r = r[pd.to_datetime(r["fecha"]) >= pd.Timestamp.today().normalize() - pd.Timedelta(days=21)]
+    r = r[pd.to_datetime(r["fecha"]) >= pd.Timestamp.today().normalize() - pd.Timedelta(days=28)]
     datos["balances"]["resultados"] = r[["ticker", "fecha", "hora", "mercado", "prob_superar", "mov_tipico_pct", "eps_estimado",
                                          "eps_real", "supero", "sorpresa_pct", "dia_reaccion", "reaccion", "indice",
                                          "reaccion_indice", "hasta_hoy"]].astype(object).where(r.notna(), None).to_dict(orient="records")
