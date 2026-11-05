@@ -137,6 +137,13 @@ datos["balances"] = {"sp": proximos("proximos_balances.csv", "probabilidad_super
 cps = BASE / "checkpoints" / "checkpoints.json"
 datos["checkpoints"] = json.loads(cps.read_text()) if cps.exists() else []
 
+# ---------- Canastas a 1, 3 y 6 meses: cada viernes del pasado, comprar lo elegido y aguantar (canasta/plazos.py) ----------
+pl = BASE / "canasta"
+if (pl / "plazos_resumen.csv").exists():
+    c = pd.read_csv(pl / "plazos_canastas.csv").sort_values(["grupo", "plazo", "fecha"])
+    datos["plazos"] = {"canastas": c[["grupo", "fecha", "plazo", "tickers", "canasta", "indice"]].round(4).to_dict(orient="records"),
+                       "resumen": pd.read_csv(pl / "plazos_resumen.csv").round(4).to_dict(orient="records")}
+
 bal_small = {b["ticker"]: b["fecha"] for b in datos["balances"]["small"]["filas"]}
 for p in datos["predicciones"]:
     p["balance"] = bal_small.get(p["ticker"], "")

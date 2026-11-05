@@ -78,7 +78,12 @@ section.tab[hidden] { display: none; }
 .tk { background: none; border: 0; padding: 0; font: 600 inherit var(--mono); font-weight: 600; color: var(--fg); cursor: pointer; border-bottom: 1px dotted var(--dim); }
 .tk:hover, .tk:focus-visible { color: var(--amber); border-bottom-color: var(--amber); outline: none; }
 .chips .tk { border: 0; font-weight: 500; }
-.tape { display: flex; gap: 0; overflow-x: auto; border: 1px solid var(--line); background: var(--panel); scrollbar-width: thin; }
+.tape { position: relative; overflow: hidden; border: 1px solid var(--line); background: var(--panel); -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
+.tape .rail { display: flex; width: max-content; animation: cinta var(--dur, 90s) linear infinite; }
+.tape:hover .rail, .tape:focus-within .rail { animation-play-state: paused; }
+@keyframes cinta { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .tape { overflow-x: auto; -webkit-mask-image: none; mask-image: none; } .tape .rail { animation: none; } }
+.tape .q i { font-style: normal; font-size: 9.5px; letter-spacing: .06em; color: var(--dim); border: 1px solid var(--line); padding: 0 3px; }
 .tape .q { flex: 0 0 auto; display: flex; gap: 8px; align-items: baseline; padding: 6px 12px; border-right: 1px solid var(--line); font-variant-numeric: tabular-nums; background: none; border-top: 0; border-bottom: 0; border-left: 0; color: var(--fg); font: 12px var(--mono); cursor: pointer; }
 .tape .q:hover { background: #17140f; }
 .tape .q b { color: var(--fg); }
@@ -118,12 +123,19 @@ footer { color: var(--dim); font-size: 11px; border-top: 1px solid var(--line); 
 .pill.arriba { border-color: var(--up); color: var(--up); }
 .pill.abajo { border-color: var(--down); color: var(--down); }
 .pill.stop { background: var(--down); border-color: var(--down); color: #000; }
+.lista { table-layout: fixed; }
 .lista td { vertical-align: middle; }
-.lista .spark { width: 130px; }
+.lista td:first-child { overflow: hidden; }
+.lista th:nth-child(2) { width: 34%; }
+.lista th:nth-child(3) { width: 124px; }
+.lista td.fin { white-space: normal; text-align: right; }
+.lista td.fin .pill { margin-top: 4px; }
+.lista .spark svg { max-width: 160px; }
 .lista tr[data-t] { cursor: pointer; }
 .lista tr[data-t]:hover td { background: #15130f; }
-@media (max-width: 600px) { .lista .spark { width: 84px; } .lista th:nth-child(4), .lista td:nth-child(4), .lista td .small { display: none; } .lista .nmc { max-width: 100px; } .lista th, .lista td { padding-inline: 4px; } }
+@media (max-width: 600px) { .lista th:nth-child(2) { width: 28%; } .lista th:nth-child(3) { width: 108px; } .lista td .small { display: none; } .lista th, .lista td { padding-inline: 4px; } }
 .nmc { color: var(--dim); font-size: 11px; display: block; max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.lista .nmc { max-width: 100%; }
 details.mas { background: var(--panel); border: 1px solid var(--line); }
 details.mas > summary { cursor: pointer; padding: 10px 14px; color: var(--dim); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; }
 details.mas > summary:hover { color: var(--amber); }
@@ -160,9 +172,9 @@ details.mas .p { background: var(--bg); }
     <div class="kflex" style="flex-wrap:wrap"><h1>RESUMEN</h1><span class="sub" id="resSub"></span></div>
     <div class="grid kpis" id="resKpis"></div>
     <div class="grid row2b">
-      <div class="p"><h2>Small caps elegidas <span id="resSmallTag"></span></h2><div class="tbl" style="max-height:none;overflow-x:auto" id="resSmall"></div></div>
-      <div class="p"><h2>S&amp;P 500 elegidas <span id="resSpTag"></span></h2><div class="tbl" style="max-height:none;overflow-x:auto" id="resSp"></div></div>
-      <div class="p"><h2>CEDEARs elegidos <span id="resCedTag"></span></h2><div class="tbl" style="max-height:none;overflow-x:auto" id="resCed"></div></div>
+      <div class="p"><h2>Small caps elegidas <span id="resSmallTag"></span></h2><div id="resSmall"></div></div>
+      <div class="p"><h2>S&amp;P 500 elegidas <span id="resSpTag"></span></h2><div id="resSp"></div></div>
+      <div class="p"><h2>CEDEARs elegidos <span id="resCedTag"></span></h2><div id="resCed"></div></div>
     </div>
     <div class="leyenda-proy"><span><i style="background:var(--amber);opacity:.3"></i>Rango esperado (proyección)</span><span><i style="height:2px;background:var(--dim)"></i>Precio antes de elegirla</span><span><i style="height:2px;background:var(--up)"></i>Precio desde que se eligió</span><span>Tocá una acción para ver el gráfico grande.</span></div>
     <div class="grid row2b">
@@ -249,7 +261,7 @@ details.mas .p { background: var(--bg); }
 
   <!-- ============ 5. BACKTEST ============ -->
   <section class="tab" id="t-backtest">
-    <div class="kflex" style="flex-wrap:wrap"><h1>BACKTEST SMALL CAPS</h1><span class="sub">Qué habría pasado siguiendo el modelo cada semana · viernes a viernes</span></div>
+    <div class="kflex" style="flex-wrap:wrap"><h1>BACKTEST</h1><span class="sub">Small caps semana a semana · y las canastas de los tres grupos a 1, 3 y 6 meses</span></div>
     <div class="p"><h2>¿Funciona?</h2><div id="veredicto"></div></div>
     <div class="grid kpis" id="kpis"></div>
     <div class="grid row2">
@@ -262,6 +274,14 @@ details.mas .p { background: var(--bg); }
         <div class="legend"><span><i style="background:var(--up)"></i>Semana ganada</span><span><i style="background:var(--down)"></i>Semana perdida</span><span>Sin barra: el modelo no eligió nada</span></div></div>
       <div class="p"><h2>Peor racha <span id="ddTag"></span></h2><div id="dd"></div>
         <div class="legend"><span>Caída desde el último máximo del modelo</span></div></div>
+    </div>
+    <div id="plBloque" class="grid" style="margin-top:6px">
+      <div class="kflex" style="flex-wrap:wrap"><h1>¿Y SI SE AGUANTA 1, 3 O 6 MESES?</h1><span class="seg" id="plSeg" role="group" aria-label="Plazo"><button type="button" data-p="1 mes" aria-pressed="false">1 mes</button><button type="button" data-p="3 meses" aria-pressed="true">3 meses</button><button type="button" data-p="6 meses" aria-pressed="false">6 meses</button></span></div>
+      <div class="note" style="margin:0">Cada viernes del pasado se arma una canasta con lo que eligió el modelo ese día (solo con la información de ese momento), se compra todo en partes iguales y se mide cuánto rindió al mes, a los 3 y a los 6 meses, contra su índice. Cada punto del gráfico es una canasta, en la fecha en que se compró.</div>
+      <div class="grid kpis" id="plKpis"></div>
+      <div class="grid row3" id="plGraf"></div>
+      <div class="p"><h2>Los tres plazos juntos <span>promedio de todas las canastas</span></h2><div style="overflow-x:auto" id="plTabla"></div>
+        <div class="note">Ojo: las canastas de viernes seguidos comparten casi las mismas semanas, así que no son pruebas independientes. En un año entran unas 3 pruebas separadas de 3 meses y 1 o 2 de 6 meses: es poca evidencia. Small caps: elegidas del backtest (nov 2025 a oct 2026), sin stop. S&amp;P 500: las 10 de mejor puntaje entre las que pasan la cascada (ene a oct 2026). CEDEARs: las 10 mejores entre las del S&amp;P 500 que tienen CEDEAR. Las acciones son empresas que siguen vivas hoy, así que los números salen algo inflados.</div></div>
     </div>
     <details class="mas">
       <summary>Más detalle: filtros y todas las operaciones</summary>
@@ -347,7 +367,8 @@ function estado(e) {
   if (e.stop && despues.some(p => p.v <= e.stop)) tag = "stop";
   return { ult, f, k, tag, cambio: ult.v / e.px - 1, vsProy: ult.v / k.c - 1, vencida: ult.f >= e.vence, n: despues.length };
 }
-const pill = st => st ? `<span class="pill ${st.tag}">${ESTADOS[st.tag]}${st.vencida ? " · vencida" : ""}</span>` : `<span class="pill">Sin precio</span>`;
+const pill = (st, corto = false) => st ? `<span class="pill ${st.tag}">${ESTADOS[st.tag]}${st.vencida && !corto ? " · vencida" : ""}</span>` : `<span class="pill">Sin precio</span>`;
+const plazoTag = (lista, txt) => lista.length && lista.every(e => estado(e)?.vencida) ? txt + " · plazo cumplido" : txt;
 function bench(t, inicio) { // cuánto se movió el índice desde la elección
   const s = serie(t); if (!s.length) return null;
   const antes = s.filter(p => p.f <= inicio); if (!antes.length) return null;
@@ -435,10 +456,10 @@ function hover(el, n, info, Wc, m) {
 
 // ---------- piezas que se repiten ----------
 function listaFilas(lista) {
-  return tabla([["Acción"], ["Real vs. proyección"], ["Desde que se eligió", "r"], ["Estado"]], lista.map(e => {
+  return tabla([["Acción"], ["Real vs. proyección"], ["Desde la elección", "r"]], lista.map(e => {
     const st = estado(e);
-    return `<tr data-t="${limpioT(e.t)}" tabindex="0"><td><b>${limpioT(e.t)}</b><span class="nmc">${esc(e.e)}</span></td><td class="spark" data-spark="${limpioT(e.t)}"></td>
-      <td class="r ${st ? cls(st.cambio) : ""}">${st ? pct(st.cambio) : "—"}<div class="small">${st ? num(e.px) + " → " + num(st.ult.v) : ""}</div></td><td>${pill(st)}</td></tr>`;
+    return `<tr data-t="${limpioT(e.t)}" tabindex="0"><td><b>${limpioT(e.t)}</b><span class="nmc" title="${esc(e.e)}">${esc(e.e)}</span></td><td class="spark" data-spark="${limpioT(e.t)}"></td>
+      <td class="fin"><span class="${st ? cls(st.cambio) : ""}">${st ? pct(st.cambio) : "—"}</span><div class="small">${st ? num(e.px) + " → " + num(st.ult.v) : ""}</div>${pill(st, true)}</td></tr>`;
   }), "lista");
 }
 function tarjetas(lista) {
@@ -473,11 +494,11 @@ function pintarResumen() {
     kpi("Dentro de lo proyectado", `${a.enRango + b.enRango + c.enRango}<span class="small"> de ${tot}</span>`, `<span class="up">${a.arriba + b.arriba + c.arriba} por encima</span> · <span class="down">${a.abajo + b.abajo + c.abajo} por debajo</span>`),
     kpi("Vencen", `${dm(D.vence_small)} · ${dm(SPD.vence)}`, "small caps a 1 semana · S&P 500 a 1 mes", "am"),
   ].join("");
-  $("resSmallTag").textContent = `${SMALL.length} de ${SM.evaluadas} · 1 semana`;
+  $("resSmallTag").textContent = plazoTag(SMALL, `${SMALL.length} de ${SM.evaluadas} · 1 semana`);
   $("resSmall").innerHTML = listaFilas(SMALL);
-  $("resSpTag").textContent = `${SPL.length} de ${SPD.evaluadas} · 1 mes`;
+  $("resSpTag").textContent = plazoTag(SPL, `${SPL.length} de ${SPD.evaluadas} · 1 mes`);
   $("resSp").innerHTML = listaFilas(SPL);
-  $("resCedTag").textContent = `${CED.length} de ${CD.evaluadas} · 1 mes`;
+  $("resCedTag").textContent = plazoTag(CED, `${CED.length} de ${CD.evaluadas} · 1 mes`);
   $("resCed").innerHTML = listaFilas(CED);
   const conBal = [...SMALL, ...SPL, ...CED.filter(e => !SPL.some(x => x.t === e.t))].filter(e => e.bal).sort((x, y) => x.bal.localeCompare(y.bal));
   $("resBalTag").textContent = conBal.length ? `${conBal.length} acciones` : "ninguna";
@@ -682,6 +703,44 @@ $("ins").innerHTML = [
     D.operaciones.map(o => `<tr><td>${fecha(o.f)}</td><td>${PX.cierres[o.t] ? tk(o.t) : esc(o.t)}${o.stop ? '<span class="tag">STOP</span>' : ""}</td><td class="r">${num(o.s)}</td><td class="r ${cls(o.r)}">${pct(o.r, 2)}</td></tr>`));
 }
 
+// ---------- canastas a 1, 3 y 6 meses (canasta/plazos.py) ----------
+const PL = D.plazos, PL_G = [{ g: "Small caps", ref: "Russell 2000" }, { g: "S&P 500", ref: "S&P 500" }, { g: "CEDEARs", ref: "S&P 500" }];
+let plazo = "3 meses";
+const plRes = (g, p) => PL.resumen.find(r => r.grupo === g && r.plazo === p);
+const veces = x => Math.round(x * 100) + "%";
+function plGrafico(d, ref) {
+  const Wp = 440, Hp = 210, m = { l: 40, r: 10, t: 10, b: 22 }, n = d.length;
+  const vals = d.flatMap(x => [x.canasta, x.indice]);
+  let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals); const paso = niceStep((hi - lo) / 4 || .01); lo = Math.floor(lo / paso) * paso; hi = Math.ceil(hi / paso) * paso;
+  const x = i => m.l + (Wp - m.l - m.r) * i / Math.max(n - 1, 1), y = v => m.t + (Hp - m.t - m.b) * (hi - v) / (hi - lo);
+  let g = ""; for (let v = lo; v <= hi + 1e-9; v += paso) g += `<line x1="${m.l}" x2="${Wp - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" ${Math.abs(v) < 1e-9 ? "" : 'stroke-dasharray="2 4"'}/><text x="${m.l - 6}" y="${y(v) + 3}" text-anchor="end">${Math.round(v * 100)}%</text>`;
+  [0, Math.floor((n - 1) / 2), n - 1].forEach((i, k) => { g += `<text x="${x(i)}" y="${Hp - 6}" text-anchor="${["start", "middle", "end"][k]}">${fecha(d[i].fecha)}</text>`; });
+  // zona entre las dos líneas: verde donde la canasta va arriba, roja donde va abajo
+  d.forEach((p, i) => { if (!i) return; const a = d[i - 1]; const dif = (p.canasta - p.indice) + (a.canasta - a.indice);
+    g += `<polygon points="${x(i - 1)},${y(a.canasta)} ${x(i)},${y(p.canasta)} ${x(i)},${y(p.indice)} ${x(i - 1)},${y(a.indice)}" fill="${dif >= 0 ? "var(--up)" : "var(--down)"}" fill-opacity=".14"/>`; });
+  const camino = k => d.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(p[k]).toFixed(1)}`).join("");
+  g += `<path d="${camino("indice")}" fill="none" stroke="var(--blue)" stroke-width="1.4" stroke-dasharray="4 3"/><path d="${camino("canasta")}" fill="none" stroke="var(--amber)" stroke-width="2"/>`;
+  g += d.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.canasta).toFixed(1)}" r="2.2" fill="var(--amber)"><title>Compra ${fecha(p.fecha)}: canasta ${pct(p.canasta)} · ${ref} ${pct(p.indice)}
+${esc(p.tickers)}</title></circle>`).join("");
+  return `<svg viewBox="0 0 ${Wp} ${Hp}" role="img" aria-label="Rendimiento a ${plazo} de cada canasta contra ${ref}, por fecha de compra">${g}</svg>`;
+}
+function pintarPlazos() {
+  if (!PL) { $("plBloque").hidden = true; return; }
+  document.querySelectorAll("#plSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === plazo));
+  $("plKpis").innerHTML = PL_G.map(G => { const r = plRes(G.g, plazo); if (!r) return "";
+    return kpi(`${G.g} · ${plazo}`, `<span class="${cls(r.canasta_prom)}">${pct(r.canasta_prom)}</span>`,
+      `${G.ref} <span class="${cls(r.indice_prom)}">${pct(r.indice_prom)}</span> · le ganó ${veces(r.gana_al_indice_pct)} de las veces · ${r.canastas} canastas`); }).join("");
+  $("plGraf").innerHTML = PL_G.map(G => { const d = PL.canastas.filter(c => c.grupo === G.g && c.plazo === plazo), r = plRes(G.g, plazo); if (!d.length) return "";
+    return `<div class="p"><h2>${G.g} <span>vs. ${G.ref} · <b class="${cls(r.diferencia_prom)}" style="font-weight:600">${pct(r.diferencia_prom)}</b></span></h2>${plGrafico(d, G.ref)}
+      <div class="legend"><span><i style="background:var(--amber)"></i>Canasta del modelo</span><span><i style="background:var(--blue)"></i>${G.ref}</span></div>
+      <div class="small">Peor canasta <span class="down">${pct(r.peor_canasta)}</span> · mejor <span class="up">${pct(r.mejor_canasta)}</span> · perdió plata ${veces(r.pierde_plata_pct)} de las veces</div></div>`; }).join("");
+  $("plTabla").innerHTML = tabla([["Grupo"], ["Plazo"], ["Canasta", "r"], ["Índice", "r"], ["Diferencia", "r"], ["Le ganó", "r"]],
+    PL_G.flatMap(G => ["1 mes", "3 meses", "6 meses"].map(p => { const r = plRes(G.g, p); if (!r) return "";
+      return `<tr style="${p === plazo ? "background:#17140f" : "color:var(--dim)"}"><td>${p === "1 mes" ? G.g : ""}</td><td>${p}</td><td class="r ${cls(r.canasta_prom)}">${pct(r.canasta_prom)}</td><td class="r">${pct(r.indice_prom)}</td><td class="r ${cls(r.diferencia_prom)}">${pct(r.diferencia_prom)}</td><td class="r">${veces(r.gana_al_indice_pct)}</td></tr>`; })));
+}
+$("plSeg").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) { plazo = b.dataset.p; pintarPlazos(); } });
+pintarPlazos();
+
 // ================= navegación =================
 // ================= 7. Checkpoints =================
 const CPS = (D.checkpoints || []).slice().reverse(); // el más nuevo primero
@@ -730,9 +789,20 @@ pintarTodo();
 const RELOJ = [...new Set(["SPY", "IWM", ...SMALL.map(e => e.t), ...SPL.map(e => e.t), ...CED.map(e => e.t)])];
 const ultimo = t => { const c = PX.cierres[t]; if (!c) return null; const v = c.filter(x => x != null); return { p: v[v.length - 1], pc: v[v.length - 2] }; };
 const cot = t => VIVO[t] || ultimo(t);
+const GRUPO_T = {}; CED.forEach(e => { GRUPO_T[e.t] = "CEDEAR"; }); SPL.forEach(e => { GRUPO_T[e.t] = "S&P"; }); SMALL.forEach(e => { GRUPO_T[e.t] = "SMALL"; });
 function dibujaTape(cambiados = []) {
-  $("tape").innerHTML = RELOJ.map(t => { const q = cot(t); if (!q) return ""; const ch = q.p / q.pc - 1;
-    return `<button type="button" class="q${cambiados.includes(t) ? " flash" : ""}" data-t="${t}"><b>${t}</b><span>${num(q.p)}</span><span class="${cls(ch)}">${pct(ch, 2)}</span></button>`; }).join("");
+  const caja = $("tape");
+  if (!caja.querySelector(".rail")) { // la lista va dos veces seguidas: al llegar a la mitad vuelve a empezar sin salto
+    const items = (copia) => RELOJ.filter(t => cot(t)).map(t => `<button type="button" class="q" data-t="${t}"${copia ? ' tabindex="-1"' : ""} title="${GRUPO_T[t] ? "Elegida · " + GRUPO_T[t] : "Índice"}"><b>${t}</b>${GRUPO_T[t] ? `<i>${GRUPO_T[t]}</i>` : ""}<span class="px"></span><span class="ch"></span></button>`).join("");
+    caja.innerHTML = `<div class="rail"><div style="display:flex">${items(false)}</div><div style="display:flex" aria-hidden="true">${items(true)}</div></div>`;
+    caja.querySelector(".rail").style.setProperty("--dur", Math.max(40, RELOJ.length * 4) + "s");
+  }
+  caja.querySelectorAll(".q").forEach(b => {
+    const t = b.dataset.t, q = cot(t); if (!q) return; const ch = q.p / q.pc - 1;
+    b.querySelector(".px").textContent = num(q.p);
+    const c = b.querySelector(".ch"); c.textContent = pct(ch, 2); c.className = "ch " + cls(ch);
+    if (cambiados.includes(t)) { b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash"); }
+  });
 }
 async function traerVivo() {
   try {
