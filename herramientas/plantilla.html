@@ -74,7 +74,7 @@ section.tab { display: grid; gap: 10px; }
 .seg button:focus-visible { outline: 2px solid var(--amber); }
 .row4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .note { color: var(--dim); font-size: 11.5px; margin-top: 8px; }
-section.tab[hidden] { display: none; }
+section.tab[hidden], .drawer[hidden] { display: none; }
 .tk { background: none; border: 0; padding: 0; font: 600 inherit var(--mono); font-weight: 600; color: var(--fg); cursor: pointer; border-bottom: 1px dotted var(--dim); }
 .tk:hover, .tk:focus-visible { color: var(--amber); border-bottom-color: var(--amber); outline: none; }
 .chips .tk { border: 0; font-weight: 500; }
@@ -148,6 +148,7 @@ details.mas > .in { padding: 12px 14px; display: grid; gap: 10px; }
 details.mas .p { background: var(--bg); }
 .leyenda-proy { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--dim); }
 .leyenda-proy i { display: inline-block; width: 14px; height: 8px; vertical-align: middle; margin-right: 5px; }
+.cards h2.sep{grid-column:1/-1;margin:6px 0 0}
 </style>
 
 <div class="wrap">
@@ -192,7 +193,8 @@ details.mas .p { background: var(--bg); }
     <div class="kflex" style="flex-wrap:wrap"><h1>SMALL CAPS</h1><span class="sub" id="smallSub"></span></div>
     <div class="grid kpis" id="smallKpis"></div>
     <div class="cards" id="smallCards"></div>
-    <div class="note">Cada tarjeta muestra el precio real contra lo que proyectó el modelo para 1 semana. La zona ámbar es donde debería quedar el precio 2 de cada 3 veces; la línea punteada roja es el stop.</div>
+    <div class="note">Cartera de small caps de la cascada. Cada 3 meses (o antes, si alguna toca el stop) se venden las que tocaron el stop y entran las de mejor puntaje de esa semana. La zona ámbar es el rango esperado a 3 meses (2 de cada 3 veces debería quedar adentro); la línea roja es el stop, que sube si el precio sube.</div>
+    <div class="p"><h2>Vendidas por tocar el stop</h2><div id="smallVend"></div></div>
     <div class="p"><h2>¿Le sirvió esto en el pasado?</h2><div id="smallPasado"></div></div>
     <details class="mas">
       <summary>Más detalle: qué señales sirven</summary>
@@ -223,15 +225,17 @@ details.mas .p { background: var(--bg); }
     <div class="kflex" style="flex-wrap:wrap"><h1>S&amp;P 500</h1><span class="sub" id="spSub"></span></div>
     <div class="grid kpis" id="spKpis"></div>
     <div class="cards" id="spCards"></div>
-    <div class="note">Precio real contra el rango esperado a 1 mes. La zona ámbar se abre con el tiempo: es donde debería quedar el precio 2 de cada 3 veces. Si presenta balance antes de vencer, el rango se rompe más seguido.</div>
-    <div class="p"><h2>Las 10 en una tabla</h2><div style="overflow-x:auto" id="spTop"></div></div>
+    <div class="note">Regla nueva (desde el 10/11/2026): las 5 acciones del S&amp;P 500 que más subieron en 12 meses (sin contar el último mes), con más peso en las más operadas. Se revisa cada 3 meses: la que cerró bajo su stop se vende y entra la siguiente. La zona ámbar es el rango esperado a 3 meses; la línea roja, el stop.</div>
+    <div class="p"><h2>Las 10 en una tabla <span>★ = principal</span></h2><div style="overflow-x:auto" id="spTop"></div></div>
     <details class="mas">
-      <summary>Más detalle: cómo se eligieron</summary>
-      <div class="in grid row2">
-        <div class="p"><h2>Dónde se caen las demás</h2><div id="spEmbudo"></div></div>
-        <div class="p"><h2>¿Qué filtros sirvieron? <span>pasan menos resto, 1 mes</span></h2><div id="spFiltros"></div>
-          <div class="note">10 meses de prueba (ene–oct 2026). Ninguno es estadísticamente firme todavía.</div></div>
-      </div>
+      <summary>Más detalle: por qué esta regla y qué cuidar</summary>
+      <div class="in"><div class="p"><ul class="ins">
+        <li>Se eligió entre 144 combinaciones mirando solo abril 2022 a diciembre 2024, y se comprobó en años que no se usaron: 2015-2017 le ganó a SPY en 8 de 13 arranques, 2018-2019 en 11, 2020-2021 en 12, 2025-2026 en 12.</li>
+        <li>Todo 2015-2026: 100 se hicieron 1.068 (caso del medio) contra 432 de SPY. Con 10 acciones: 793.</li>
+        <li>Perdió en 2018 (75 contra 93) y en 2023. En su peor momento cayó 49-59% desde el máximo (SPY 34%).</li>
+        <li>Está muy concentrada: hoy 9 de las 10 son de tecnología/memoria. Buena parte de la ganancia histórica vino de 5 acciones de chips.</li>
+        <li>No sirve en small caps: ahí perdió contra IWM en todos los arranques.</li>
+      </ul></div></div>
     </details>
   </section>
 
@@ -240,14 +244,15 @@ details.mas .p { background: var(--bg); }
     <div class="kflex" style="flex-wrap:wrap"><h1>CEDEARs</h1><span class="sub" id="cedSub"></span></div>
     <div class="grid kpis" id="cedKpis"></div>
     <div class="cards" id="cedCards"></div>
-    <div class="note">Los 10 CEDEARs de mejor puntaje del modelo, elegidos el mismo día que el listado del S&amp;P 500 y seguidos desde ahí. Precio en dólares de la acción original (no el del CEDEAR en pesos). La zona ámbar es el rango esperado a 1 mes.</div>
-    <div class="p"><h2>Los 10 en una tabla</h2><div style="overflow-x:auto" id="cedTop"></div></div>
+    <div class="note">Misma regla que el S&amp;P 500, pero solo entre las empresas del S&amp;P 500 que tienen CEDEAR en BYMA. Precio en dólares de la acción original (no el del CEDEAR en pesos). La zona ámbar es el rango esperado a 3 meses; la línea roja, el stop.</div>
+    <div class="p"><h2>Los 10 en una tabla <span>★ = principal</span></h2><div style="overflow-x:auto" id="cedTop"></div></div>
     <details class="mas">
-      <summary>Más detalle: cómo se eligieron</summary>
-      <div class="in grid row2">
-        <div class="p"><h2>Dónde se caen los demás</h2><div id="cedEmbudo"></div></div>
-        <div class="p"><h2>Cómo se armó la lista</h2><ul class="ins" id="cedComo"></ul></div>
-      </div>
+      <summary>Más detalle: cómo se armó la lista</summary>
+      <div class="in"><div class="p"><ul class="ins">
+        <li>Se tomaron las empresas que hoy están en el S&amp;P 500 y tienen CEDEAR en BYMA, y se ordenaron por cuánto subieron en 12 meses (sin contar el último mes).</li>
+        <li>CEDEARs de empresas fuera del S&amp;P 500 (MELI, VIST, TSM...) quedan afuera: la regla solo se probó dentro del S&amp;P 500.</li>
+        <li>Mismas advertencias que en la pestaña S&amp;P 500: caídas fuertes y mucha concentración en tecnología.</li>
+      </ul></div></div>
     </details>
   </section>
 
@@ -352,13 +357,16 @@ $("act").textContent = `Actualizado ${fecha(D.actualizado)}`;
 
 // ================= las elegidas y su proyección =================
 // Small caps: proyección a 1 semana (suba esperada ± banda). S&P 500: rango a 1 mes centrado en el precio (escala log).
-const SMALL = D.predicciones.map(p => ({ t: p.ticker, e: p.empresa || "", mercado: "small", inicio: p.fecha, vence: D.vence_small,
-  px: p.precio_entrada, ret: p.ret_esperado, banda: p.banda, stop: p.stop, p: p.score, bal: p.balance || "" }));
+const SMALL = D.predicciones.map(p => ({ t: p.ticker, e: p.empresa || "", mercado: "small", inicio: p.fecha, vence: p.vence || D.vence_small,
+  px: p.precio_entrada, ret: p.ret_esperado, banda: p.banda, stop: p.stop, stopDesde: p.stop_desde, p: p.score, bal: p.balance || "", nueva: p.estado === "nueva" }));
+const VEND = D.vendidas_small || [];
 const SPL = TOP.map(t => ({ t: t.t, e: t.e, mercado: "sp", inicio: SPD.fecha, vence: SPD.vence, px: t.px, k: Math.log(t.techo / t.px),
-  piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, rango: t.rango }));
+  piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, rango: t.rango, stop: t.stop, peso: t.peso, grupo: t.grupo }));
 const CD = D.cedears || { top: [], embudo: [], evaluadas: 0, total: 0 };
 const CED = CD.top.map(t => ({ t: t.t, e: t.e, mercado: "ced", inicio: CD.fecha, vence: CD.vence, px: t.px, k: Math.log(t.techo / t.px),
-  piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, sp: t.sp }));
+  piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, sp: t.sp, stop: t.stop, peso: t.peso, grupo: t.grupo }));
+const IMP = SPD.regla === "impulso12";
+const grupoTag = e => e.grupo === "principal" ? '<span class="tag" style="margin:0;color:var(--amber);border-color:var(--amber)">PRINCIPAL</span>' : e.grupo === "siguiente" ? '<span class="tag" style="margin:0">SIGUIENTE</span>' : "";
 const POR = {}; [...CED, ...SMALL, ...SPL].forEach(e => { POR[e.t] = e; });
 const MERC = { small: "Small cap", sp: "S&P 500", ced: "CEDEAR" };
 
@@ -385,7 +393,7 @@ function estado(e) {
   const ult = s[s.length - 1], despues = s.filter(p => p.f > e.inicio);
   const f = frac(e, ult.f), k = cono(e, f);
   let tag = !despues.length ? "nueva" : ult.v > k.hi ? "arriba" : ult.v < k.lo ? "abajo" : "rango";
-  if (e.stop && despues.some(p => p.v <= e.stop)) tag = "stop";
+  if (e.stop && despues.some(p => p.f > (e.stopDesde || e.inicio) && p.v <= e.stop)) tag = "stop";
   return { ult, f, k, tag, cambio: ult.v / e.px - 1, vsProy: ult.v / k.c - 1, vencida: ult.f >= e.vence, n: despues.length };
 }
 const pill = (st, corto = false) => st ? `<span class="pill ${st.tag}">${ESTADOS[st.tag]}${st.vencida && !corto ? " · vencida" : ""}</span>` : `<span class="pill">Sin precio</span>`;
@@ -479,7 +487,7 @@ function hover(el, n, info, Wc, m) {
 function listaFilas(lista) {
   return tabla([["Acción"], ["Real vs. proyección"], ["Desde la elección", "r"]], lista.map(e => {
     const st = estado(e);
-    return `<tr data-t="${limpioT(e.t)}" tabindex="0"><td><b>${limpioT(e.t)}</b><span class="nmc" title="${esc(e.e)}">${esc(e.e)}</span></td><td class="spark" data-spark="${limpioT(e.t)}"></td>
+    return `<tr data-t="${limpioT(e.t)}" tabindex="0"><td><b>${limpioT(e.t)}</b>${e.grupo === "principal" ? ' <span class="am" title="Principal">★</span>' : ""}${e.nueva ? ' <span class="am" style="font-size:10px">NUEVA</span>' : ""}<span class="nmc" title="${esc(e.e)}">${esc(e.e)}</span></td><td class="spark" data-spark="${limpioT(e.t)}"></td>
       <td class="fin"><span class="${st ? cls(st.cambio) : ""}">${st ? pct(st.cambio) : "—"}</span><div class="small">${st ? num(e.px) + " → " + num(st.ult.v) : ""}</div>${pill(st, true)}</td></tr>`;
   }), "lista");
 }
@@ -487,12 +495,13 @@ function tarjetas(lista) {
   return lista.map(e => {
     const st = estado(e), fin = cono(e, 1);
     const datos = e.mercado === "small"
-      ? [["Entrada", num(e.px)], ["Objetivo", num(fin.c)], ["Stop", num(e.stop)], ["Vence", dm(e.vence)]]
+      ? [["Entrada", num(e.px)], ["Rango 3 m", `${num(fin.lo)}–${num(fin.hi)}`], ["Stop", num(e.stop)], ["Revisión", dm(e.vence)]]
+      : e.stop ? [["Elegida a", num(e.px)], ["Stop", num(e.stop)], ["Rango 3 m", `${num(fin.lo, 0)}–${num(fin.hi, 0)}`], ["Revisión", dm(e.vence)]]
       : [["Elegida a", num(e.px)], ["Piso", num(fin.lo)], ["Techo", num(fin.hi)], ["Vence", dm(e.vence)]];
     return `<article class="card" data-t="${limpioT(e.t)}" tabindex="0" aria-label="Ver detalle de ${limpioT(e.t)}">
       <div class="tit"><div style="min-width:0"><b>${limpioT(e.t)}</b><div class="nm" title="${esc(e.e)}">${esc(e.e)}</div></div>
         <div class="px"><div>${st ? num(st.ult.v) : "—"}</div><div class="${st ? cls(st.cambio) : ""}" style="font-size:12px">${st ? pct(st.cambio) : ""}</div></div></div>
-      <div class="kflex">${pill(st)}${e.bal ? `<span class="tag" style="margin:0">BALANCE ${dm(e.bal)}</span>` : ""}${e.cedear ? `<span class="tag" style="margin:0">CEDEAR ${esc(e.cedear)}${e.ratio ? " · " + esc(e.ratio) : ""}</span>` : ""}</div>
+      <div class="kflex">${grupoTag(e)}${e.peso ? `<span class="tag" style="margin:0">PESO ${num(e.peso * 100, 0)}%</span>` : ""}${e.nueva ? '<span class="tag" style="margin:0;color:var(--amber);border-color:var(--amber)">NUEVA</span>' : ""}${pill(st)}${e.bal ? `<span class="tag" style="margin:0">BALANCE ${dm(e.bal)}</span>` : ""}${e.cedear ? `<span class="tag" style="margin:0">CEDEAR ${esc(e.cedear)}${e.ratio ? " · " + esc(e.ratio) : ""}</span>` : ""}</div>
       <div data-graf="${limpioT(e.t)}"></div>
       <div class="mini4">${datos.map(([k, v]) => `<div><div class="lbl">${k}</div><div>${v}</div></div>`).join("")}</div>
     </article>`;
@@ -513,13 +522,13 @@ function pintarResumen() {
     kpi("S&P 500 elegidas", `<span class="${cls(b.prom)}">${pct(b.prom)}</span>`, `promedio de las ${SPL.length} · S&P 500 (SPY) <span class="${cls(b.ref)}">${pct(b.ref)}</span>`),
     kpi("CEDEARs elegidos", `<span class="${cls(c.prom)}">${pct(c.prom)}</span>`, `promedio de los ${CED.length} · S&P 500 (SPY) <span class="${cls(c.ref)}">${pct(c.ref)}</span>`),
     kpi("Dentro de lo proyectado", `${a.enRango + b.enRango + c.enRango}<span class="small"> de ${tot}</span>`, `<span class="up">${a.arriba + b.arriba + c.arriba} por encima</span> · <span class="down">${a.abajo + b.abajo + c.abajo} por debajo</span>`),
-    kpi("Vencen", `${dm(D.vence_small)} · ${dm(SPD.vence)}`, "small caps a 1 semana · S&P 500 a 1 mes", "am"),
+    kpi("Próxima revisión", `${dm(D.vence_small)} · ${dm(SPD.vence)}`, "small caps · S&P 500 y CEDEARs (cada 3 meses)", "am"),
   ].join("");
-  $("resSmallTag").textContent = plazoTag(SMALL, `${SMALL.length} de ${SM.evaluadas} · 1 semana`);
+  $("resSmallTag").textContent = plazoTag(SMALL, `${SMALL.length} en cartera · 3 meses`);
   $("resSmall").innerHTML = listaFilas(SMALL);
-  $("resSpTag").textContent = plazoTag(SPL, `${SPL.length} de ${SPD.evaluadas} · 1 mes`);
+  $("resSpTag").textContent = plazoTag(SPL, IMP ? `5 principales ★ + 5 siguientes · 3 meses` : `${SPL.length} de ${SPD.evaluadas} · 1 mes`);
   $("resSp").innerHTML = listaFilas(SPL);
-  $("resCedTag").textContent = plazoTag(CED, `${CED.length} de ${CD.evaluadas} · 1 mes`);
+  $("resCedTag").textContent = plazoTag(CED, IMP ? `5 principales ★ + 5 siguientes · 3 meses` : `${CED.length} de ${CD.evaluadas} · 1 mes`);
   $("resCed").innerHTML = listaFilas(CED);
   const ELEGB = [...SMALL, ...SPL, ...CED.filter(e => !SPL.some(x => x.t === e.t))].map(e => {
     const fila = (e.mercado === "small" ? balSm : balSp).find(r => r.ticker === e.t), r = resDe(e.t), f = r ? r.fecha : fila?.fecha || e.bal;
@@ -530,8 +539,8 @@ function pintarResumen() {
     `<tr><td>${fecha(f)}</td><td>${tk(e.t)}<div class="small" style="margin:0">${MERC[e.mercado]}</div></td><td>${resCorto(r)}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : r?.mov_tipico_pct != null ? "±" + num(r.mov_tipico_pct, 1) + "%" : "—"}</td></tr>`))
     : `<div class="small">Ninguna de las elegidas tiene balance en estas semanas.</div>`;
   $("resProbado").innerHTML = [
-    `<b>Small caps:</b> en la prueba histórica el modelo no le ganó a elegir al azar de la misma lista. Por eso se sigue en papel, semana a semana.`,
-    `<b>S&P 500:</b> las elegidas rindieron algo más que el resto en 10 meses, pero todavía sin firmeza estadística.`,
+    `<b>S&P 500 y CEDEARs (regla nueva):</b> las 5 que más subieron en 12 meses, revisando cada 3 meses. En la prueba 2015-2026 le ganó a SPY en 12 de 13 arranques (1.068 contra 432), pero con caídas de hasta 59% y muy concentrada en tecnología.`,
+    `<b>Small caps (cascada):</b> en las pruebas no le ganó a IWM. Se sigue en papel; cada 3 meses se reemplazan solo las que tocaron el stop.`,
     `<b>Rangos:</b> sirven para saber cuánto se puede mover cada acción. Si quedan adentro ~2 de cada 3 veces, están bien calibrados.`,
     `<b>Balances:</b> no anticipan si sube o baja, pero sí que se va a mover más que lo normal.`,
   ].map(t => `<li>${t}</li>`).join("");
@@ -541,7 +550,7 @@ function pintarResumen() {
 // ================= 2. Small caps =================
 function pintarSmall() {
   const a = resumenGrupo(SMALL, "IWM");
-  $("smallSub").textContent = `${SMALL.length} elegidas de ${SM.evaluadas} · ${fecha(SMALL[0]?.inicio)} · vencen ${fecha(D.vence_small)}`;
+  $("smallSub").textContent = `${SMALL.length} en cartera · ${VEND.length} vendidas por stop · próxima revisión ${fecha(D.vence_small)}`;
   $("smallKpis").innerHTML = [
     kpi("Promedio desde la entrada", `<span class="${cls(a.prom)}">${pct(a.prom)}</span>`, `Russell 2000 (IWM): <span class="${cls(a.ref)}">${pct(a.ref)}</span>`),
     kpi("Suben", `${a.suben}<span class="small"> de ${a.st.length}</span>`, "precio de hoy sobre el de entrada", "up"),
@@ -549,6 +558,9 @@ function pintarSmall() {
     kpi("Tocaron el stop", a.stop, "con el cierre diario", a.stop ? "down" : ""),
   ].join("");
   $("smallCards").innerHTML = tarjetas(SMALL);
+  $("smallVend").innerHTML = VEND.length ? tabla([["Acción"], ["Entrada", "r"], ["Stop", "r"], ["Vendida", ""], ["Resultado", "r"], ["Hoy", "r"]], VEND.map(v =>
+    `<tr><td>${tk(v.ticker)}</td><td class="r">${num(v.precio_entrada)}<div class="small" style="margin:0">${fecha(v.entrada)}</div></td><td class="r">${num(v.stop)}</td><td>${fecha(v.vendida)}</td><td class="r ${cls(v.resultado)}">${pct(v.resultado)}</td><td class="r">${num(v.hoy)}</td></tr>`))
+    + `<div class="note">Se reemplazaron con las de mejor puntaje de la cascada de hoy que pasan todos los filtros. Solo había ${SMALL.filter(e => e.nueva).length} nuevas; los lugares que faltan quedan en efectivo.</div>` : `<div class="small">Ninguna tocó el stop.</div>`;
   dibujarGraficos($("smallCards"));
   $("smallPasado").innerHTML = `<div class="verdict"><b>Todavía no se distingue del azar.</b> En ${K.semanas} semanas de prueba, elegir así le ganó por ${K.ventaja_sem.replace(".", ",")} por semana a comprar toda la lista, pero el margen (${K.ventaja_margen.replaceAll(".", ",")}) cruza el cero.</div>
     <div class="note">Detalle completo en la pestaña <a href="#backtest" style="color:var(--amber)">Backtest</a>.</div>`;
@@ -587,20 +599,20 @@ function pintarSmall() {
 // ================= 3. S&P 500 =================
 function pintarSp() {
   const b = resumenGrupo(SPL, "SPY");
-  $("spSub").textContent = `${SPL.length} elegidas de ${SPD.evaluadas} · ${fecha(SPD.fecha)} · vencen ${fecha(SPD.vence)}`;
+  $("spSub").textContent = IMP ? `Regla: impulso 12 meses · elegidas ${fecha(SPD.fecha)} · próxima revisión ${fecha(SPD.vence)}` : `${SPL.length} elegidas de ${SPD.evaluadas} · ${fecha(SPD.fecha)} · vencen ${fecha(SPD.vence)}`;
   $("spKpis").innerHTML = [
     kpi("Promedio desde la elección", `<span class="${cls(b.prom)}">${pct(b.prom)}</span>`, `S&P 500 (SPY): <span class="${cls(b.ref)}">${pct(b.ref)}</span>`),
     kpi("Suben", `${b.suben}<span class="small"> de ${b.st.length}</span>`, "precio de hoy sobre el de la elección", "up"),
     kpi("Dentro de lo proyectado", `${b.enRango}<span class="small"> de ${b.st.length}</span>`, `<span class="up">${b.arriba} arriba</span> · <span class="down">${b.abajo} abajo</span>`),
-    kpi("Con CEDEAR", SPL.filter(e => e.cedear).length, "se pueden comprar en BYMA"),
+    IMP ? kpi("Las 5 principales", (p => `<span class="${cls(p.prom)}">${pct(p.prom)}</span>`)(resumenGrupo(SPL.filter(e => e.grupo === "principal"), "SPY")), "la cartera de la regla") : kpi("Con CEDEAR", SPL.filter(e => e.cedear).length, "se pueden comprar en BYMA"),
   ].join("");
-  $("spCards").innerHTML = tarjetas(SPL);
+  $("spCards").innerHTML = IMP ? `<h2 class="sep">5 principales <span>· la cartera de la regla</span></h2>` + tarjetas(SPL.filter(e => e.grupo === "principal")) + `<h2 class="sep">5 siguientes <span>· para seguir; entran si sale alguna principal</span></h2>` + tarjetas(SPL.filter(e => e.grupo !== "principal")) : tarjetas(SPL);
   dibujarGraficos($("spCards"));
-  $("spTop").innerHTML = tabla([["Acción"], ["Empresa"], ["Sector"], ["Puntaje", "r"], ["Elegida a", "r"], ["Hoy", "r"], ["Piso", "r"], ["Techo", "r"], ["Balance"], ["CEDEAR"]],
+  $("spTop").innerHTML = tabla([["Acción"], ["Empresa"], ["Sector"], [IMP ? "Suba 12 m" : "Puntaje", "r"], ["Elegida a", "r"], ["Hoy", "r"], ["Piso", "r"], ["Techo", "r"], ["Balance"], ["CEDEAR"]],
     SPL.map(e => { const st = estado(e);
-      return `<tr><td>${tk(e.t)}</td><td>${esc(e.e)}</td><td style="color:var(--dim)">${esc(e.sec)}</td><td class="r am">${num(e.p)}</td><td class="r">${num(e.px)}</td><td class="r ${st ? cls(st.cambio) : ""}">${st ? num(st.ult.v) : "—"}</td><td class="r">${num(e.piso)}</td><td class="r">${num(e.techo)}</td><td>${e.bal ? fecha(e.bal) : '<span style="color:var(--dim)">—</span>'}</td><td>${e.cedear ? esc(e.cedear) : '<span style="color:var(--dim)">—</span>'}</td></tr>`; }));
+      return `<tr><td>${tk(e.t)}${e.grupo === "principal" ? ' <span class="am">★</span>' : ""}</td><td>${esc(e.e)}</td><td style="color:var(--dim)">${esc(e.sec)}</td><td class="r am">${IMP ? pct(e.p, 0) : num(e.p)}</td><td class="r">${num(e.px)}</td><td class="r ${st ? cls(st.cambio) : ""}">${st ? num(st.ult.v) : "—"}</td><td class="r">${num(e.piso)}</td><td class="r">${num(e.techo)}</td><td>${e.bal ? fecha(e.bal) : '<span style="color:var(--dim)">—</span>'}</td><td>${e.cedear ? esc(e.cedear) : '<span style="color:var(--dim)">—</span>'}</td></tr>`; }));
 }
-{
+if ($("spEmbudo")) {
   const nombres = { sentimiento: "Sentimiento", tecnico: "Técnico", momentum: "Momentum", ganancias: "Ganancias", graham: "Graham", "pasa todo": "Pasan todo" };
   $("spEmbudo").innerHTML = hBar(SPD.embudo.map(e => ({ n: (e.etapa === "pasa todo" ? "" : "Caen en ") + nombres[e.etapa], v: e.n, c: e.etapa === "pasa todo" ? "var(--up)" : "var(--dim)" })));
   const mx = Math.max(...SPD.filtros.map(f => Math.abs(f.dif_1m))) || 1;
@@ -610,20 +622,20 @@ function pintarSp() {
 // ================= 4. CEDEARs =================
 function pintarCed() {
   const c = resumenGrupo(CED, "SPY");
-  $("cedSub").textContent = `${CED.length} elegidos de ${CD.evaluadas} · ${fecha(CD.fecha)} · vencen ${fecha(CD.vence)}`;
+  $("cedSub").textContent = IMP ? `Regla: impulso 12 meses entre las del S&P 500 con CEDEAR · ${fecha(CD.fecha)} · próxima revisión ${fecha(CD.vence)}` : `${CED.length} elegidos de ${CD.evaluadas} · ${fecha(CD.fecha)} · vencen ${fecha(CD.vence)}`;
   $("cedKpis").innerHTML = [
     kpi("Promedio desde la elección", `<span class="${cls(c.prom)}">${pct(c.prom)}</span>`, `S&P 500 (SPY): <span class="${cls(c.ref)}">${pct(c.ref)}</span>`),
     kpi("Suben", `${c.suben}<span class="small"> de ${c.st.length}</span>`, "precio de hoy sobre el de la elección", "up"),
     kpi("Dentro de lo proyectado", `${c.enRango}<span class="small"> de ${c.st.length}</span>`, `<span class="up">${c.arriba} arriba</span> · <span class="down">${c.abajo} abajo</span>`),
-    kpi("Fuera del S&P 500", CED.filter(e => !e.sp).length, "empresas que no están en la lista del S&P"),
+    IMP ? kpi("Los 5 principales", (p => `<span class="${cls(p.prom)}">${pct(p.prom)}</span>`)(resumenGrupo(CED.filter(e => e.grupo === "principal"), "SPY")), "la cartera de la regla") : kpi("Fuera del S&P 500", CED.filter(e => !e.sp).length, "empresas que no están en la lista del S&P"),
   ].join("");
-  $("cedCards").innerHTML = tarjetas(CED);
+  $("cedCards").innerHTML = IMP ? `<h2 class="sep">5 principales <span>· la cartera de la regla</span></h2>` + tarjetas(CED.filter(e => e.grupo === "principal")) + `<h2 class="sep">5 siguientes <span>· para seguir; entran si sale alguno principal</span></h2>` + tarjetas(CED.filter(e => e.grupo !== "principal")) : tarjetas(CED);
   dibujarGraficos($("cedCards"));
-  $("cedTop").innerHTML = tabla([["CEDEAR"], ["Acción"], ["Empresa"], ["Puntaje", "r"], ["Elegida a", "r"], ["Hoy", "r"], ["Piso", "r"], ["Techo", "r"], ["Balance"], ["Ratio"]],
+  $("cedTop").innerHTML = tabla([["CEDEAR"], ["Acción"], ["Empresa"], [IMP ? "Suba 12 m" : "Puntaje", "r"], ["Elegida a", "r"], ["Hoy", "r"], ["Piso", "r"], ["Techo", "r"], ["Balance"], ["Ratio"]],
     CED.map(e => { const st = estado(e);
-      return `<tr><td><b>${esc(e.cedear)}</b></td><td>${tk(e.t)}</td><td>${esc(e.e)}${e.sp ? '<span class="tag">S&P</span>' : ""}</td><td class="r am">${num(e.p)}</td><td class="r">${num(e.px)}</td><td class="r ${st ? cls(st.cambio) : ""}">${st ? num(st.ult.v) : "—"}</td><td class="r">${num(e.piso)}</td><td class="r">${num(e.techo)}</td><td>${e.bal ? fecha(e.bal) : '<span style="color:var(--dim)">—</span>'}</td><td style="color:var(--dim)">${esc(e.ratio || "—")}</td></tr>`; }));
+      return `<tr><td><b>${esc(e.cedear)}</b>${e.grupo === "principal" ? ' <span class="am">★</span>' : ""}</td><td>${tk(e.t)}</td><td>${esc(e.e)}${e.sp && !IMP ? '<span class="tag">S&P</span>' : ""}</td><td class="r am">${IMP ? pct(e.p, 0) : num(e.p)}</td><td class="r">${num(e.px)}</td><td class="r ${st ? cls(st.cambio) : ""}">${st ? num(st.ult.v) : "—"}</td><td class="r">${num(e.piso)}</td><td class="r">${num(e.techo)}</td><td>${e.bal ? fecha(e.bal) : '<span style="color:var(--dim)">—</span>'}</td><td style="color:var(--dim)">${esc(e.ratio || "—")}</td></tr>`; }));
 }
-{
+if ($("cedEmbudo")) {
   const nombres = { sentimiento: "Sentimiento", tecnico: "Técnico", momentum: "Momentum", ganancias: "Ganancias", graham: "Graham", universo: "Liquidez", "pasa todo": "Pasan todo" };
   $("cedEmbudo").innerHTML = hBar(CD.embudo.map(e => ({ n: (e.etapa === "pasa todo" ? "" : "Caen en ") + (nombres[e.etapa] || e.etapa), v: e.n, c: e.etapa === "pasa todo" ? "var(--up)" : "var(--dim)" })));
   $("cedComo").innerHTML = [
@@ -906,7 +918,8 @@ function detalle(t, foco = true) {
     html += `<div class="kflex"><span class="lbl">Precio real vs. proyección</span><span class="ranges" id="rangos">${[[20, "1M"], [60, "3M"], [120, "6M"]].map(([k, l]) => `<button type="button" data-n="${k}" aria-pressed="${k === antesN}">${l}</button>`).join("")}</span></div><div id="dChart"></div>`;
     html += `<div class="leyenda-proy"><span><i style="background:var(--amber);opacity:.3"></i>Rango esperado</span><span><i style="height:2px;background:var(--amber)"></i>Centro de la proyección</span>${e.stop ? '<span><i style="height:2px;background:var(--down)"></i>Stop</span>' : ""}${e.bal ? '<span><i style="height:2px;background:var(--blue)"></i>Balance</span>' : ""}</div>`;
     const kv = [["Estado", pill(st)], ["Desde que se eligió", st ? `<span class="${cls(st.cambio)}">${pct(st.cambio)}</span>` : "—"], ["Vs. centro proyectado", st ? `<span class="${cls(st.vsProy)}">${pct(st.vsProy)}</span>` : "—"]];
-    if (e.mercado === "small") kv.push(["Entrada", num(e.px)], ["Objetivo 1 semana", `${num(fin.c)} <span class="up">(${pct(e.ret)})</span>`], ["Rango al vencer", `${num(fin.lo)}–${num(fin.hi)}`], ["Stop", num(e.stop)], ["Puntaje", num(e.p)], ["Vence", fecha(e.vence)]);
+    if (e.mercado === "small") kv.push(["Entrada", num(e.px)], ["Rango a 3 meses", `${num(fin.lo)}–${num(fin.hi)}`], ["Stop", num(e.stop)], ["Puntaje", num(e.p)], ["Revisión", fecha(e.vence)]);
+    else if (e.stop) kv.push(["Grupo", grupoTag(e)], ["Elegida a", num(e.px)], ["Stop", num(e.stop)], ["Piso 3 meses", num(e.piso)], ["Techo 3 meses", num(e.techo)], ["Suba 12 meses", pct(e.p, 0)], ["Peso sugerido", num(e.peso * 100, 0) + "%"], ["Sector", esc(e.sec)], ["Revisión", fecha(e.vence)]);
     else kv.push(["Elegida a", num(e.px)], ["Piso 1 mes", num(e.piso)], ["Techo 1 mes", num(e.techo)], ["Puntaje", num(e.p)], ["Sector", esc(e.sec)], ["Vence", fecha(e.vence)]);
     if (e.cedear) kv.push(["CEDEAR", esc(e.cedear)]);
     if (bal) kv.push(["Balance", fecha(bal.fecha)], ["Prob. superar", pct(bal.prob_superar, 0, false)], ["Mueve típico", "±" + num(bal.movimiento_tipico_pct, 1) + "%"]);

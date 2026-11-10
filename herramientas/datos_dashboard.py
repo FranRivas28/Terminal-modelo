@@ -12,6 +12,9 @@ SEG = BASE / "seguimiento"
 ops = pd.read_csv(SEG / "backtest_panel.csv", parse_dates=["fecha"])
 ev = pd.read_csv(SEG / "backtest_evaluaciones.csv", parse_dates=["semana"])
 pred = pd.read_csv(SEG / "predicciones.csv")
+CART = BASE / "cartera"
+if (CART / "cartera_small.csv").exists():   # cartera rotada (cartera/rotar_small.py): reemplaza a las predicciones de 1 semana
+    pred = pd.read_csv(CART / "cartera_small.csv")
 regla = pd.read_csv(SEG / "regla_seguimiento.csv")
 resumen = pd.read_csv(SEG / "backtest_resumen.csv")
 
@@ -57,7 +60,7 @@ datos = {
     "operaciones": [{"f": str(o.fecha.date()), "t": o.ticker, "s": round(o.score, 2), "r": round(o.ret_real, 4),
                      "stop": bool(o.toco_stop)} for o in ops.sort_values("fecha", ascending=False).itertuples()],
     "predicciones": pred.astype(object).where(pred.notna(), None).to_dict(orient="records"),
-    "vence_small": str((pd.Timestamp(pred["fecha"].max()) + pd.Timedelta(days=7)).date()) if len(pred) else "",
+    "vence_small": (str(pred["vence"].max()) if "vence" in pred else str((pd.Timestamp(pred["fecha"].max()) + pd.Timedelta(days=7)).date())) if len(pred) else "",
     "regla": regla.fillna("").to_dict(orient="records"),
     "filtros": filtros,
     "insights": {
@@ -122,6 +125,25 @@ if ced.exists():
                  "p": f.puntaje, "px": round(f.precio, 2), "piso": f.piso, "techo": f.techo, "bal": texto(f.balance),
                  "sp": f.en_sp500 == "sí"} for f in tc.itertuples()],
     }
+
+# ---------- Regla nueva (10/11/2026): impulso de 12 meses, revisión cada 3 meses (cartera/seleccion_trimestral.py) ----------
+def trimestral(nombre):
+    f = CART / f"seleccion_{nombre}.csv"
+    if not f.exists():
+        return None
+    d = pd.read_csv(f).sort_values("puesto")
+    texto = lambda x: x if isinstance(x, str) else ""
+    return {"fecha": d["fecha"].iloc[0], "vence": d["revision"].iloc[0],
+            "top": [{"t": r.ticker, "e": texto(r.empresa), "sec": texto(r.sector), "p": r.suba_12m, "px": r.precio, "piso": r.piso_3m,
+                     "techo": r.techo_3m, "rango": r.rango_3m_pct, "stop": r.stop, "peso": r.peso, "grupo": r.grupo, "puesto": int(r.puesto),
+                     "bal": texto(r.balance), "cedear": texto(r.cedear), "ratio": texto(r.ratio), "sp": True,
+                     "evitar": "", "motivos": ""} for r in d.itertuples()]}
+for clave, nombre in (("sp", "sp500"), ("cedears", "cedears")):
+    t = trimestral(nombre)
+    if t:
+        datos[clave].update({**t, "regla": "impulso12"})
+if (CART / "vendidas_small.csv").exists():
+    datos["vendidas_small"] = pd.read_csv(CART / "vendidas_small.csv").to_dict(orient="records")
 
 # ---------- Balances de las próximas dos semanas ----------
 def proximos(nombre, prob):
