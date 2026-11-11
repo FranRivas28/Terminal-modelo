@@ -145,6 +145,10 @@ for clave, nombre in (("sp", "sp500"), ("cedears", "cedears")):
     b = trimestral(f"b_{nombre}")  # regla B en prueba (cartera/seleccion_b.py)
     if b:
         datos[clave]["b"] = b
+if (CART / "cartera_tercios.csv").exists():  # cartera simulada 1/3 SPY + 1/3 QQQ + 1/3 regla B (cartera/cartera_tercios.py)
+    ct = pd.read_csv(CART / "cartera_tercios.csv")
+    datos["tercios"] = {"inicio": ct.inicio.iloc[0], "revision": ct.revision.iloc[0], "capital": float(ct.monto_usd.sum()),
+                        "filas": [{"t": r.ticker, "parte": r.parte, "e": r.nombre, "peso": r.peso, "monto": r.monto_usd, "px": r.precio_entrada} for r in ct.itertuples()]}
 if (CART / "vendidas_small.csv").exists():
     datos["vendidas_small"] = pd.read_csv(CART / "vendidas_small.csv").to_dict(orient="records")
 
@@ -191,6 +195,35 @@ datos = limpiar(datos)
 precios = Path(__file__).parent / "precios.json"  # de bajar_precios.py
 if precios.exists():
     datos["precios"] = json.loads(precios.read_text())
+# ---------- Backtest de las reglas actuales (rotacion/t26_*.py y t27_mejoras.py, 11/11/2026) ----------
+ROT = BASE / "rotacion"
+if (ROT / "t27/metricas.csv").exists():
+    NOM = {"Regla actual": "Impulso 12 m", "A: no comprar si SPY cayó": "A: no comprar si SPY cayó",
+           "B: Magic Formula entre las de impulso": "Regla B", "SPY": "SPY", "QQQ": "QQQ", "A + B juntas": "A + B juntas",
+           "Magic Formula sola": "Magic Formula sola", "Mitad SPY + mitad A+B": "Mitad SPY + mitad A+B"}
+    met = pd.read_csv(ROT / "t27/metricas.csv")
+    met = met[met.version.isin(NOM)].assign(version=lambda d: d.version.map(NOM))
+    bt2 = {"metricas": met.round(3).replace({np.nan: None}).to_dict(orient="records"), "curvas": {}, "caidas": {}}
+    for v, cols in (("2011-2026", ["Regla actual", "B: Magic Formula entre las de impulso", "SPY", "QQQ"]),
+                    ("2000-2026", ["Regla actual", "A: no comprar si SPY cayó", "SPY", "QQQ"])):
+        for clave, arch in (("curvas", "curvas"), ("caidas", "caidas")):
+            c = pd.read_csv(ROT / f"t27/{arch}_{v}.csv")
+            c = c.iloc[::2] if len(c) > 1000 else c  # cada 2 semanas en la ventana larga
+            bt2[clave][v] = {"f": c.fecha.tolist(), "s": {NOM[k]: c[k].round(1).tolist() for k in cols}}
+    tr = pd.read_csv(ROT / "t27/metricas_tramos.csv")
+    tr = tr[tr.version.isin(["Regla actual", "B: Magic Formula entre las de impulso", "A: no comprar si SPY cayó", "SPY", "QQQ"])]
+    bt2["tramos"] = tr.assign(version=tr.version.map(NOM))[["ventana", "version", "tramo", "cagr", "sharpe", "caida"]].round(2).to_dict(orient="records")
+    an = pd.read_csv(ROT / "t27/anual.csv")
+    bt2["anual"] = an.assign(version=an.version.map(NOM)).to_dict(orient="records")
+    pr = pd.read_csv(ROT / "t26/precio_resumen.csv")
+    pr = pr[pr.lapso == "Todo 2000-2026"]
+    bt2["pruebas"] = pr[["prueba", "medio", "gana_a_spy", "caida_mediana"]].replace({np.nan: None}).to_dict(orient="records")
+    bt2["spy_2000"] = float(pr.spy.iloc[0]); bt2["qqq_2000"] = float(pr.qqq.iloc[0])
+    ap = pd.read_csv(ROT / "t26/aportes_resumen_2011.csv")
+    ap = ap[(ap["años"] == 5) & ap.cartera.isin(["Regla (5 acc.)", "Magic Formula entre las de impulso", "SPY solo", "QQQ solo", "Mitad SPY + mitad regla"])]
+    bt2["aportes"] = ap[["cartera", "arranques", "puesto", "final_mediano", "final_malo", "final_bueno", "pierde", "caida_peor"]].to_dict(orient="records")
+    datos["bt2"] = bt2
+
 (Path(__file__).parent / "datos.json").write_text(json.dumps(datos, ensure_ascii=False, default=str))
 print(json.dumps(datos["kpi"], indent=1), datos["insights"])
 
