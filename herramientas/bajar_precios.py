@@ -10,6 +10,7 @@ AQUI = Path(__file__).parent
 d = json.loads((AQUI / "datos.json").read_text())
 tickers = sorted(set([x["t"] for x in d["sp"]["top"]] + [p["ticker"] for p in d["predicciones"]]
                      + [x["t"] for x in d.get("cedears", {}).get("top", [])]
+                     + [x["t"] for k in ("sp", "cedears") for x in d.get(k, {}).get("b", {}).get("top", [])]
                      + [b["ticker"] for b in d["balances"]["sp"]["filas"]]
                      + [o["t"] for o in d["operaciones"][:30]] + ["SPY", "IWM"]))
 

@@ -112,6 +112,7 @@ footer { color: var(--dim); font-size: 11px; border-top: 1px solid var(--line); 
 .card { background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 8px; cursor: pointer; min-width: 0; }
 .card:hover, .card:focus-visible { border-color: var(--amber); outline: none; }
 .card .tit { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.card > .kflex { flex-wrap: wrap; row-gap: 4px; }
 .card .tit b { font: 600 18px var(--cond); letter-spacing: .03em; }
 .card .nm { color: var(--dim); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
 .card .px { text-align: right; font-variant-numeric: tabular-nums; }
@@ -149,6 +150,14 @@ details.mas .p { background: var(--bg); }
 .leyenda-proy { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: var(--dim); }
 .leyenda-proy i { display: inline-block; width: 14px; height: 8px; vertical-align: middle; margin-right: 5px; }
 .cards h2.sep{grid-column:1/-1;margin:6px 0 0}
+/* ---- regla B (en prueba) ---- */
+.row3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+@media (min-width: 1300px) { .row3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.bloqueB { border-top: 2px dashed var(--blue); margin-top: 18px; padding-top: 14px; display: grid; gap: 12px; }
+.bloqueB h1 { color: var(--blue); }
+.tagB { display: inline-block; font-size: 10px; letter-spacing: .06em; padding: 1px 6px; border: 1px solid var(--blue); color: var(--blue); white-space: nowrap; }
+.p.esB { border-top: 2px solid var(--blue); }
+.p.esB h2 { color: var(--blue); }
 </style>
 
 <div class="wrap">
@@ -176,16 +185,16 @@ details.mas .p { background: var(--bg); }
   <section class="tab" id="t-resumen">
     <div class="kflex" style="flex-wrap:wrap"><h1>RESUMEN</h1><span class="sub" id="resSub"></span></div>
     <div class="grid kpis" id="resKpis"></div>
-    <div class="grid row2b">
+    <div class="leyenda-proy"><span><i style="background:var(--amber);opacity:.3"></i>Rango esperado (proyección)</span><span><i style="height:2px;background:var(--dim)"></i>Precio antes de elegirla</span><span><i style="height:2px;background:var(--up)"></i>Precio desde que se eligió</span><span><span class="tagB">B</span> Regla B, en prueba</span><span>Tocá una acción para ver el gráfico grande.</span></div>
+    <div class="grid row3">
       <div class="p"><h2>Small caps elegidas <span id="resSmallTag"></span></h2><div id="resSmall"></div></div>
-      <div class="p"><h2>S&amp;P 500 elegidas <span id="resSpTag"></span></h2><div id="resSp"></div></div>
-      <div class="p"><h2>CEDEARs elegidos <span id="resCedTag"></span></h2><div id="resCed"></div></div>
-    </div>
-    <div class="leyenda-proy"><span><i style="background:var(--amber);opacity:.3"></i>Rango esperado (proyección)</span><span><i style="height:2px;background:var(--dim)"></i>Precio antes de elegirla</span><span><i style="height:2px;background:var(--up)"></i>Precio desde que se eligió</span><span>Tocá una acción para ver el gráfico grande.</span></div>
-    <div class="grid row2b">
+      <div class="p"><h2>S&amp;P 500 · impulso 12 m <span id="resSpTag"></span></h2><div id="resSp"></div></div>
+      <div class="p"><h2>CEDEARs · impulso 12 m <span id="resCedTag"></span></h2><div id="resCed"></div></div>
+      <div class="p esB"><h2>S&amp;P 500 · regla B <span id="resSpBTag"></span></h2><div id="resSpB"></div></div>
+      <div class="p esB"><h2>CEDEARs · regla B <span id="resCedBTag"></span></h2><div id="resCedB"></div></div>
       <div class="p"><h2>Balances de las elegidas <span id="resBalTag"></span></h2><div class="tbl" id="resBal"></div></div>
-      <div class="p"><h2>Qué está probado y qué no</h2><ul class="ins" id="resProbado"></ul></div>
     </div>
+    <div class="p"><h2>Qué está probado y qué no</h2><ul class="ins" id="resProbado"></ul></div>
   </section>
 
   <!-- ============ 2. SMALL CAPS ============ -->
@@ -237,6 +246,13 @@ details.mas .p { background: var(--bg); }
         <li>No sirve en small caps: ahí perdió contra IWM en todos los arranques.</li>
       </ul></div></div>
     </details>
+    <div class="bloqueB">
+      <div class="kflex" style="flex-wrap:wrap"><h1>OTRA REGLA (B) · EN PRUEBA</h1><span class="sub" id="spBSub"></span></div>
+      <div class="note" style="margin:0">No es la regla de arriba: es una segunda forma de elegir que se sigue en papel durante 2 trimestres. De las acciones del S&amp;P 500 que están en la mitad que más subió en 12 meses, se quedan las 5 más baratas y rentables según la Magic Formula de Greenblatt (cuánto gana la empresa respecto de lo que vale y respecto del capital que usa). Mismo peso, stop y revisión cada 3 meses. En la prueba 2011-2026 tuvo mejor relación ganancia/riesgo que SPY (Sharpe 0,83 contra 0,76; peor caída −34% contra −49% de la regla de impulso), pero perdió contra SPY en 2023-2026.</div>
+      <div class="grid kpis" id="spBKpis"></div>
+      <div class="cards" id="spBCards"></div>
+      <div class="p esB"><h2>Las 5 en una tabla <span>regla B</span></h2><div style="overflow-x:auto" id="spBTop"></div></div>
+    </div>
   </section>
 
   <!-- ============ 4. CEDEARs ============ -->
@@ -254,6 +270,13 @@ details.mas .p { background: var(--bg); }
         <li>Mismas advertencias que en la pestaña S&amp;P 500: caídas fuertes y mucha concentración en tecnología.</li>
       </ul></div></div>
     </details>
+    <div class="bloqueB">
+      <div class="kflex" style="flex-wrap:wrap"><h1>OTRA REGLA (B) · EN PRUEBA</h1><span class="sub" id="cedBSub"></span></div>
+      <div class="note" style="margin:0">No es la regla de arriba: es una segunda forma de elegir que se sigue en papel durante 2 trimestres. De las acciones del S&amp;P 500 que están en la mitad que más subió en 12 meses y tienen CEDEAR en BYMA, se quedan las 5 más baratas y rentables según la Magic Formula de Greenblatt (cuánto gana la empresa respecto de lo que vale y respecto del capital que usa). Mismo peso, stop y revisión cada 3 meses. En la prueba 2011-2026 tuvo mejor relación ganancia/riesgo que SPY (Sharpe 0,83 contra 0,76; peor caída −34% contra −49% de la regla de impulso), pero perdió contra SPY en 2023-2026.</div>
+      <div class="grid kpis" id="cedBKpis"></div>
+      <div class="cards" id="cedBCards"></div>
+      <div class="p esB"><h2>Los 5 en una tabla <span>regla B</span></h2><div style="overflow-x:auto" id="cedBTop"></div></div>
+    </div>
   </section>
 
   <!-- ============ 5. BALANCES ============ -->
@@ -366,8 +389,12 @@ const CD = D.cedears || { top: [], embudo: [], evaluadas: 0, total: 0 };
 const CED = CD.top.map(t => ({ t: t.t, e: t.e, mercado: "ced", inicio: CD.fecha, vence: CD.vence, px: t.px, k: Math.log(t.techo / t.px),
   piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, sp: t.sp, stop: t.stop, peso: t.peso, grupo: t.grupo }));
 const IMP = SPD.regla === "impulso12";
-const grupoTag = e => e.grupo === "principal" ? '<span class="tag" style="margin:0;color:var(--amber);border-color:var(--amber)">PRINCIPAL</span>' : e.grupo === "siguiente" ? '<span class="tag" style="margin:0">SIGUIENTE</span>' : "";
-const POR = {}; [...CED, ...SMALL, ...SPL].forEach(e => { POR[e.t] = e; });
+const aB = (g, merc) => g ? g.top.map(t => ({ t: t.t, e: t.e, mercado: merc, regla: "B", inicio: g.fecha, vence: g.vence, px: t.px, k: Math.log(t.techo / t.px),
+  piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, stop: t.stop, peso: t.peso, grupo: "b", mf: t.mf, per: t.per })) : [];
+const SPB = aB(SPD.b, "sp"), CEDB = aB(CD.b, "ced");
+const grupoTag = e => e.grupo === "b" ? '<span class="tagB">REGLA B · EN PRUEBA</span>' : e.grupo === "principal" ? '<span class="tag" style="margin:0;color:var(--amber);border-color:var(--amber)">PRINCIPAL</span>' : e.grupo === "siguiente" ? '<span class="tag" style="margin:0">SIGUIENTE</span>' : "";
+const POR = {}; [...CEDB, ...SPB, ...CED, ...SMALL, ...SPL].forEach(e => { POR[e.t] = e; }); // si está en las dos reglas, manda la de impulso
+const EN_B = new Set([...SPB, ...CEDB].map(e => e.t));
 const MERC = { small: "Small cap", sp: "S&P 500", ced: "CEDEAR" };
 
 function cono(e, f) { // centro, piso y techo esperados cuando pasó la fracción f del plazo (se abre como raíz del tiempo)
@@ -487,7 +514,7 @@ function hover(el, n, info, Wc, m) {
 function listaFilas(lista) {
   return tabla([["Acción"], ["Real vs. proyección"], ["Desde la elección", "r"]], lista.map(e => {
     const st = estado(e);
-    return `<tr data-t="${limpioT(e.t)}" tabindex="0"><td><b>${limpioT(e.t)}</b>${e.grupo === "principal" ? ' <span class="am" title="Principal">★</span>' : ""}${e.nueva ? ' <span class="am" style="font-size:10px">NUEVA</span>' : ""}<span class="nmc" title="${esc(e.e)}">${esc(e.e)}</span></td><td class="spark" data-spark="${limpioT(e.t)}"></td>
+    return `<tr data-t="${limpioT(e.t)}" tabindex="0"><td><b>${limpioT(e.t)}</b>${e.grupo === "principal" ? ' <span class="am" title="Principal">★</span>' : ""}${e.grupo === "b" ? ' <span class="tagB" title="Regla B, en prueba">B</span>' : ""}${e.nueva ? ' <span class="am" style="font-size:10px">NUEVA</span>' : ""}<span class="nmc" title="${esc(e.e)}">${esc(e.e)}</span></td><td class="spark" data-spark="${limpioT(e.t)}"></td>
       <td class="fin"><span class="${st ? cls(st.cambio) : ""}">${st ? pct(st.cambio) : "—"}</span><div class="small">${st ? num(e.px) + " → " + num(st.ult.v) : ""}</div>${pill(st, true)}</td></tr>`;
   }), "lista");
 }
@@ -515,12 +542,14 @@ function dibujarGraficos(root) {
 // ================= 1. Resumen =================
 function pintarResumen() {
   const a = resumenGrupo(SMALL, "IWM"), b = resumenGrupo(SPL, "SPY"), c = resumenGrupo(CED, "SPY"), tot = a.st.length + b.st.length + c.st.length;
+  const bB = resumenGrupo([...SPB, ...CEDB.filter(e => !SPB.some(x => x.t === e.t))], "SPY");
   const ultF = PX.fechas.length ? PX.fechas[PX.fechas.length - 1] : "";
   $("resSub").textContent = `Elegidas del ${fecha(SMALL[0]?.inicio)} (small) y ${fecha(SPD.fecha)} (S&P y CEDEARs) · precios al ${fecha(ultF)}`;
   $("resKpis").innerHTML = [
     kpi("Small caps elegidas", `<span class="${cls(a.prom)}">${pct(a.prom)}</span>`, `promedio de las ${SMALL.length} · Russell 2000 (IWM) <span class="${cls(a.ref)}">${pct(a.ref)}</span>`),
     kpi("S&P 500 elegidas", `<span class="${cls(b.prom)}">${pct(b.prom)}</span>`, `promedio de las ${SPL.length} · S&P 500 (SPY) <span class="${cls(b.ref)}">${pct(b.ref)}</span>`),
     kpi("CEDEARs elegidos", `<span class="${cls(c.prom)}">${pct(c.prom)}</span>`, `promedio de los ${CED.length} · S&P 500 (SPY) <span class="${cls(c.ref)}">${pct(c.ref)}</span>`),
+    ...(SPB.length ? [kpi("Regla B (en prueba)", `<span class="${cls(bB.prom)}">${pct(bB.prom)}</span>`, `promedio de las ${bB.st.length} (S&P y CEDEARs) · SPY <span class="${cls(bB.ref)}">${pct(bB.ref)}</span>`)] : []),
     kpi("Dentro de lo proyectado", `${a.enRango + b.enRango + c.enRango}<span class="small"> de ${tot}</span>`, `<span class="up">${a.arriba + b.arriba + c.arriba} por encima</span> · <span class="down">${a.abajo + b.abajo + c.abajo} por debajo</span>`),
     kpi("Próxima revisión", `${dm(D.vence_small)} · ${dm(SPD.vence)}`, "small caps · S&P 500 y CEDEARs (cada 3 meses)", "am"),
   ].join("");
@@ -530,7 +559,11 @@ function pintarResumen() {
   $("resSp").innerHTML = listaFilas(SPL);
   $("resCedTag").textContent = plazoTag(CED, IMP ? `5 principales ★ + 5 siguientes · 3 meses` : `${CED.length} de ${CD.evaluadas} · 1 mes`);
   $("resCed").innerHTML = listaFilas(CED);
-  const ELEGB = [...SMALL, ...SPL, ...CED.filter(e => !SPL.some(x => x.t === e.t))].map(e => {
+  $("resSpBTag").textContent = SPB.length ? `Magic Formula · 3 meses` : "sin datos";
+  $("resSpB").innerHTML = listaFilas(SPB);
+  $("resCedBTag").textContent = CEDB.length ? `Magic Formula · 3 meses` : "sin datos";
+  $("resCedB").innerHTML = listaFilas(CEDB);
+  const ELEGB = [...SMALL, ...SPL, ...CED, ...SPB, ...CEDB].filter((e, i, l) => l.findIndex(x => x.t === e.t) === i).map(e => {
     const fila = (e.mercado === "small" ? balSm : balSp).find(r => r.ticker === e.t), r = resDe(e.t), f = r ? r.fecha : fila?.fecha || e.bal;
     return { e, fila, r, f };
   }).filter(x => x.r || (x.f && x.f >= D.actualizado)).sort((a, b) => !!b.r - !!a.r || (a.r ? b.f.localeCompare(a.f) : a.f.localeCompare(b.f)));
@@ -540,6 +573,7 @@ function pintarResumen() {
     : `<div class="small">Ninguna de las elegidas tiene balance en estas semanas.</div>`;
   $("resProbado").innerHTML = [
     `<b>S&P 500 y CEDEARs (regla nueva):</b> las 5 que más subieron en 12 meses, revisando cada 3 meses. En la prueba 2015-2026 le ganó a SPY en 12 de 13 arranques (1.068 contra 432), pero con caídas de hasta 59% y muy concentrada en tecnología.`,
+    `<b>Regla B (en prueba):</b> de las que más subieron en 12 meses, las 5 más baratas y rentables por la Magic Formula. En 2011-2026 tuvo mejor ganancia por riesgo que SPY (Sharpe 0,83 contra 0,76) y caídas más chicas (−34%), pero perdió contra SPY en 2023-2026. Se sigue en papel 2 trimestres.`,
     `<b>Small caps (cascada):</b> en las pruebas no le ganó a IWM. Se sigue en papel; cada 3 meses se reemplazan solo las que tocaron el stop.`,
     `<b>Rangos:</b> sirven para saber cuánto se puede mover cada acción. Si quedan adentro ~2 de cada 3 veces, están bien calibrados.`,
     `<b>Balances:</b> no anticipan si sube o baja, pero sí que se va a mover más que lo normal.`,
@@ -617,6 +651,25 @@ if ($("spEmbudo")) {
   $("spEmbudo").innerHTML = hBar(SPD.embudo.map(e => ({ n: (e.etapa === "pasa todo" ? "" : "Caen en ") + nombres[e.etapa], v: e.n, c: e.etapa === "pasa todo" ? "var(--up)" : "var(--dim)" })));
   const mx = Math.max(...SPD.filtros.map(f => Math.abs(f.dif_1m))) || 1;
   $("spFiltros").innerHTML = SPD.filtros.map(f => `<div class="fbar" style="grid-template-columns:minmax(0,150px) minmax(0,1fr) 70px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(f.filtro)}">${esc(f.filtro)}</span><div class="track"><div class="mid"></div><div class="v" style="${f.dif_1m >= 0 ? "left:50%" : "right:50%"};width:${Math.abs(f.dif_1m) / mx * 50}%;background:${f.dif_1m >= 0 ? "var(--up)" : "var(--down)"}"></div></div><span class="${cls(f.dif_1m)}" style="text-align:right">${f.dif_1m > 0 ? "+" : ""}${num(f.dif_1m)} pp</span></div>`).join("");
+}
+
+// ---------- regla B (en prueba), dentro de las pestañas S&P y CEDEARs ----------
+function pintarB(lista, pre, ced) {
+  const caja = $(pre + "BCards").closest(".bloqueB");
+  if (!lista.length) { caja.hidden = true; return; }
+  const g = resumenGrupo(lista, "SPY"), e0 = lista[0];
+  $(pre + "BSub").textContent = `Magic Formula entre las de impulso · elegidas ${fecha(e0.inicio)} · próxima revisión ${fecha(e0.vence)}`;
+  $(pre + "BKpis").innerHTML = [
+    kpi("Promedio desde la elección", `<span class="${cls(g.prom)}">${pct(g.prom)}</span>`, `S&P 500 (SPY): <span class="${cls(g.ref)}">${pct(g.ref)}</span>`),
+    kpi("Suben", `${g.suben}<span class="small"> de ${g.st.length}</span>`, "precio de hoy sobre el de la elección", "up"),
+    kpi("Dentro de lo proyectado", `${g.enRango}<span class="small"> de ${g.st.length}</span>`, `<span class="up">${g.arriba} arriba</span> · <span class="down">${g.abajo} abajo</span>`),
+    kpi("También en la regla de impulso", lista.filter(e => (ced ? CED : SPL).some(x => x.t === e.t)).length, "acciones repetidas en las dos listas"),
+  ].join("");
+  $(pre + "BCards").innerHTML = tarjetas(lista);
+  dibujarGraficos($(pre + "BCards"));
+  $(pre + "BTop").innerHTML = tabla([[ced ? "CEDEAR" : "Acción"], ["Empresa"], ["Sector"], ["Suba 12 m", "r"], ["P/E", "r"], ["Peso", "r"], ["Elegida a", "r"], ["Hoy", "r"], ["Stop", "r"], [ced ? "Ratio" : "CEDEAR"]],
+    lista.map(e => { const st = estado(e);
+      return `<tr><td>${ced ? `<b>${esc(e.cedear)}</b>` : tk(e.t)}</td><td>${esc(e.e)}</td><td style="color:var(--dim)">${esc(e.sec)}</td><td class="r am">${pct(e.p, 0)}</td><td class="r">${e.per != null ? num(e.per, 1) : "—"}</td><td class="r">${num(e.peso * 100, 0)}%</td><td class="r">${num(e.px)}</td><td class="r ${st ? cls(st.cambio) : ""}">${st ? num(st.ult.v) : "—"}</td><td class="r">${num(e.stop)}</td><td>${ced ? esc(e.ratio || "—") : e.cedear ? esc(e.cedear) : '<span style="color:var(--dim)">—</span>'}</td></tr>`; }));
 }
 
 // ================= 4. CEDEARs =================
@@ -859,14 +912,14 @@ function mostrar() {
 addEventListener("hashchange", mostrar); mostrar();
 addEventListener("keydown", e => { if (/^[1-7]$/.test(e.key) && !e.target.closest("input,textarea")) location.hash = TABS[e.key - 1]; });
 
-function pintarTodo() { pintarResumen(); pintarSmall(); pintarSp(); pintarCed(); }
+function pintarTodo() { pintarResumen(); pintarSmall(); pintarSp(); pintarCed(); pintarB(SPB, "sp", false); pintarB(CEDB, "ced", true); }
 pintarTodo();
 
 // ================= cinta de precios y tiempo real =================
-const RELOJ = [...new Set(["SPY", "IWM", ...SMALL.map(e => e.t), ...SPL.map(e => e.t), ...CED.map(e => e.t)])];
+const RELOJ = [...new Set(["SPY", "IWM", ...SMALL.map(e => e.t), ...SPL.map(e => e.t), ...CED.map(e => e.t), ...SPB.map(e => e.t), ...CEDB.map(e => e.t)])];
 const ultimo = t => { const c = PX.cierres[t]; if (!c) return null; const v = c.filter(x => x != null); return { p: v[v.length - 1], pc: v[v.length - 2] }; };
 const cot = t => VIVO[t] || ultimo(t);
-const GRUPO_T = {}; CED.forEach(e => { GRUPO_T[e.t] = "CEDEAR"; }); SPL.forEach(e => { GRUPO_T[e.t] = "S&P"; }); SMALL.forEach(e => { GRUPO_T[e.t] = "SMALL"; });
+const GRUPO_T = {}; [...CEDB, ...SPB].forEach(e => { GRUPO_T[e.t] = "B"; }); CED.forEach(e => { GRUPO_T[e.t] = "CEDEAR"; }); SPL.forEach(e => { GRUPO_T[e.t] = "S&P"; }); SMALL.forEach(e => { GRUPO_T[e.t] = "SMALL"; });
 function dibujaTape(cambiados = []) {
   const caja = $("tape");
   if (!caja.querySelector(".rail")) { // la lista va dos veces seguidas: al llegar a la mitad vuelve a empezar sin salto
@@ -910,7 +963,7 @@ function detalle(t, foco = true) {
   abierta = t;
   const e = POR[t], q = cot(t), ops = D.operaciones.filter(o => o.t === t);
   const bal = balSp.concat(balSm).find(x => x.ticker === t);
-  let html = `<div class="kflex"><div><div class="lbl">${e ? MERC[e.mercado] + " · elegida" : "Acción"}</div><div class="big">${limpioT(t)}</div><div class="small">${esc(e ? e.e : "")}</div></div><button type="button" class="x" id="cerrar">Cerrar ✕</button></div>`;
+  let html = `<div class="kflex"><div><div class="lbl">${e ? MERC[e.mercado] + (e.regla === "B" ? " · regla B (en prueba)" : " · elegida" + (EN_B.has(t) ? " · también en regla B" : "")) : "Acción"}</div><div class="big">${limpioT(t)}</div><div class="small">${esc(e ? e.e : "")}</div></div><button type="button" class="x" id="cerrar">Cerrar ✕</button></div>`;
   if (q) { const ch = q.p / q.pc - 1;
     html += `<div class="kflex"><div class="big" style="font-size:32px">${num(q.p)}</div><div class="${cls(ch)}" style="font-size:16px">${pct(ch, 2)} hoy</div><span class="chip live ${VIVO[t] ? "on" : ""}"><i></i>${VIVO[t] ? "En vivo" : "Cierre"}</span></div>`; }
   if (e) {
@@ -919,7 +972,7 @@ function detalle(t, foco = true) {
     html += `<div class="leyenda-proy"><span><i style="background:var(--amber);opacity:.3"></i>Rango esperado</span><span><i style="height:2px;background:var(--amber)"></i>Centro de la proyección</span>${e.stop ? '<span><i style="height:2px;background:var(--down)"></i>Stop</span>' : ""}${e.bal ? '<span><i style="height:2px;background:var(--blue)"></i>Balance</span>' : ""}</div>`;
     const kv = [["Estado", pill(st)], ["Desde que se eligió", st ? `<span class="${cls(st.cambio)}">${pct(st.cambio)}</span>` : "—"], ["Vs. centro proyectado", st ? `<span class="${cls(st.vsProy)}">${pct(st.vsProy)}</span>` : "—"]];
     if (e.mercado === "small") kv.push(["Entrada", num(e.px)], ["Rango a 3 meses", `${num(fin.lo)}–${num(fin.hi)}`], ["Stop", num(e.stop)], ["Puntaje", num(e.p)], ["Revisión", fecha(e.vence)]);
-    else if (e.stop) kv.push(["Grupo", grupoTag(e)], ["Elegida a", num(e.px)], ["Stop", num(e.stop)], ["Piso 3 meses", num(e.piso)], ["Techo 3 meses", num(e.techo)], ["Suba 12 meses", pct(e.p, 0)], ["Peso sugerido", num(e.peso * 100, 0) + "%"], ["Sector", esc(e.sec)], ["Revisión", fecha(e.vence)]);
+    else if (e.stop) kv.push(["Grupo", grupoTag(e)], ["Elegida a", num(e.px)], ["Stop", num(e.stop)], ["Piso 3 meses", num(e.piso)], ["Techo 3 meses", num(e.techo)], ["Suba 12 meses", pct(e.p, 0)], ...(e.per != null ? [["P/E", num(e.per, 1)], ["Magic Formula", "mejor que el " + num(e.mf, 0) + "% de las candidatas"]] : []), ["Peso sugerido", num(e.peso * 100, 0) + "%"], ["Sector", esc(e.sec)], ["Revisión", fecha(e.vence)]);
     else kv.push(["Elegida a", num(e.px)], ["Piso 1 mes", num(e.piso)], ["Techo 1 mes", num(e.techo)], ["Puntaje", num(e.p)], ["Sector", esc(e.sec)], ["Vence", fecha(e.vence)]);
     if (e.cedear) kv.push(["CEDEAR", esc(e.cedear)]);
     if (bal) kv.push(["Balance", fecha(bal.fecha)], ["Prob. superar", pct(bal.prob_superar, 0, false)], ["Mueve típico", "±" + num(bal.movimiento_tipico_pct, 1) + "%"]);

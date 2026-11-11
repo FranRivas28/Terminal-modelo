@@ -137,11 +137,14 @@ def trimestral(nombre):
             "top": [{"t": r.ticker, "e": texto(r.empresa), "sec": texto(r.sector), "p": r.suba_12m, "px": r.precio, "piso": r.piso_3m,
                      "techo": r.techo_3m, "rango": r.rango_3m_pct, "stop": r.stop, "peso": r.peso, "grupo": r.grupo, "puesto": int(r.puesto),
                      "bal": texto(r.balance), "cedear": texto(r.cedear), "ratio": texto(r.ratio), "sp": True,
-                     "evitar": "", "motivos": ""} for r in d.itertuples()]}
+                     "evitar": "", "motivos": "", **({"mf": r.mf_puesto, "per": r.per} if "mf_puesto" in d else {})} for r in d.itertuples()]}
 for clave, nombre in (("sp", "sp500"), ("cedears", "cedears")):
     t = trimestral(nombre)
     if t:
         datos[clave].update({**t, "regla": "impulso12"})
+    b = trimestral(f"b_{nombre}")  # regla B en prueba (cartera/seleccion_b.py)
+    if b:
+        datos[clave]["b"] = b
 if (CART / "vendidas_small.csv").exists():
     datos["vendidas_small"] = pd.read_csv(CART / "vendidas_small.csv").to_dict(orient="records")
 
