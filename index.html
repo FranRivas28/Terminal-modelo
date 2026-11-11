@@ -84,10 +84,7 @@ section.tab[hidden], .drawer[hidden] { display: none; }
 .tk:hover, .tk:focus-visible { color: var(--amber); border-bottom-color: var(--amber); outline: none; }
 .chips .tk { border: 0; font-weight: 500; }
 .tape { position: relative; overflow: hidden; border: 1px solid var(--line); background: var(--panel); -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
-.tape .rail { display: flex; width: max-content; animation: cinta var(--dur, 90s) linear infinite; }
-.tape:hover .rail, .tape:focus-within .rail { animation-play-state: paused; }
-@keyframes cinta { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .tape { overflow-x: auto; -webkit-mask-image: none; mask-image: none; } .tape .rail { animation: none; } }
+.tape .rail { display: flex; width: max-content; will-change: transform; }
 .tape .q i { font-style: normal; font-size: 9.5px; letter-spacing: .06em; color: var(--dim); border: 1px solid var(--line); padding: 0 3px; }
 .tape .q { flex: 0 0 auto; display: flex; gap: 8px; align-items: baseline; padding: 6px 12px; border-right: 1px solid var(--line); font-variant-numeric: tabular-nums; background: none; border-top: 0; border-bottom: 0; border-left: 0; color: var(--fg); font: 12px var(--mono); cursor: pointer; }
 .tape .q:hover { background: #17140f; }
@@ -215,7 +212,6 @@ body { margin: 0; }
       <div class="p"><h2>Small caps elegidas <span id="resSmallTag"></span></h2><div id="resSmall"></div></div>
       <div class="p"><h2>CEDEARs (S&amp;P 500) · impulso 12 m <span id="resCedTag"></span></h2><div id="resCed"></div></div>
       <div class="p esB"><h2>CEDEARs (S&amp;P 500) · regla B <span id="resCedBTag"></span></h2><div id="resCedB"></div></div>
-      <div class="p"><h2>Balances de las elegidas <span id="resBalTag"></span></h2><div class="tbl" id="resBal"></div></div>
     </div>
     <div class="p"><h2>Qué está probado y qué no</h2><ul class="ins" id="resProbado"></ul></div>
   </section>
@@ -582,14 +578,6 @@ function pintarResumen() {
   $("resCed").innerHTML = listaFilas(CED);
   $("resCedBTag").textContent = CEDB.length ? `Magic Formula · 3 meses` : "sin datos";
   $("resCedB").innerHTML = listaFilas(CEDB);
-  const ELEGB = [...SMALL, ...SPL, ...CED, ...SPB, ...CEDB].filter((e, i, l) => l.findIndex(x => x.t === e.t) === i).map(e => {
-    const fila = (e.mercado === "small" ? balSm : balSp).find(r => r.ticker === e.t), r = resDe(e.t), f = r ? r.fecha : fila?.fecha || e.bal;
-    return { e, fila, r, f };
-  }).filter(x => x.r || (x.f && x.f >= D.actualizado)).sort((a, b) => !!b.r - !!a.r || (a.r ? b.f.localeCompare(a.f) : a.f.localeCompare(b.f)));
-  $("resBalTag").textContent = ELEGB.length ? `${ELEGB.filter(x => x.r).length} presentaron · ${ELEGB.filter(x => !x.r).length} por presentar` : "ninguna";
-  $("resBal").innerHTML = ELEGB.length ? tabla([["Día"], ["Acción"], ["Resultado"], ["Mueve típico", "r"]], ELEGB.map(({ e, fila, r, f }) =>
-    `<tr><td>${fecha(f)}</td><td>${tk(e.t)}<div class="small" style="margin:0">${MERC[e.mercado]}</div></td><td>${resCorto(r)}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : r?.mov_tipico_pct != null ? "±" + num(r.mov_tipico_pct, 1) + "%" : "—"}</td></tr>`))
-    : `<div class="small">Ninguna de las elegidas tiene balance en estas semanas.</div>`;
   $("resProbado").innerHTML = [
     `<b>CEDEARs (S&P 500), regla de impulso:</b> las 5 que más subieron en 12 meses, revisando cada 3 meses. En la prueba 2015-2026 le ganó a SPY en 12 de 13 arranques (1.068 contra 432), pero con caídas de hasta 59% y muy concentrada en tecnología.`,
     `<b>Regla B (en prueba):</b> de las que más subieron en 12 meses, las 5 más baratas y rentables por la Magic Formula. En 2011-2026 tuvo mejor ganancia por riesgo que SPY (Sharpe 0,83 contra 0,76) y caídas más chicas (−34%), pero perdió contra SPY en 2023-2026. Se sigue en papel 2 trimestres.`,
@@ -1087,7 +1075,7 @@ function dibujaTape(cambiados = []) {
   if (!caja.querySelector(".rail")) { // la lista va dos veces seguidas: al llegar a la mitad vuelve a empezar sin salto
     const items = (copia) => RELOJ.filter(t => cot(t)).map(t => `<button type="button" class="q" data-t="${t}"${copia ? ' tabindex="-1"' : ""} title="${GRUPO_T[t] ? "Elegida · " + GRUPO_T[t] : "Índice"}"><b>${t}</b>${GRUPO_T[t] ? `<i>${GRUPO_T[t]}</i>` : ""}<span class="px"></span><span class="ch"></span></button>`).join("");
     caja.innerHTML = `<div class="rail"><div style="display:flex">${items(false)}</div><div style="display:flex" aria-hidden="true">${items(true)}</div></div>`;
-    caja.querySelector(".rail").style.setProperty("--dur", Math.max(40, RELOJ.length * 4) + "s");
+    moverTape();
   }
   caja.querySelectorAll(".q").forEach(b => {
     const t = b.dataset.t, q = cot(t); if (!q) return; const ch = q.p / q.pc - 1;
@@ -1095,6 +1083,28 @@ function dibujaTape(cambiados = []) {
     const c = b.querySelector(".ch"); c.textContent = pct(ch, 2); c.className = "ch " + cls(ch);
     if (cambiados.includes(t)) { b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash"); }
   });
+}
+// la cinta se mueve con requestAnimationFrame (no con animación CSS): así no queda frenada
+// por un toque en el celular, por el foco de un botón ni por la opción "reducir movimiento".
+// Solo se pausa mientras el mouse está encima.
+let tapeX = 0, tapeT = 0, tapePausa = false, tapeMitad = 0, tapeLoop = false;
+function moverTape() {
+  const caja = $("tape"), rail = caja.querySelector(".rail"); if (!rail) return;
+  tapeMitad = rail.firstElementChild.offsetWidth;
+  if (tapeLoop) return; tapeLoop = true;
+  caja.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") tapePausa = true; });
+  caja.addEventListener("pointerleave", () => { tapePausa = false; });
+  const paso = t => {
+    const dt = tapeT ? Math.min(t - tapeT, 100) : 0; tapeT = t; // si la pestaña estuvo oculta no salta
+    tapeMitad = rail.firstElementChild.offsetWidth; // se mide siempre (cambia al cargar la letra o al girar el celular)
+    if (!tapePausa && tapeMitad > 0) {
+      tapeX += dt * 0.045; // píxeles por milisegundo (≈45 px por segundo)
+      if (tapeX >= tapeMitad) tapeX -= tapeMitad; // la lista va dos veces: al llegar a la mitad vuelve sin salto
+      rail.style.transform = `translate3d(${-tapeX}px,0,0)`;
+    }
+    requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
 }
 async function traerVivo() {
   try {
