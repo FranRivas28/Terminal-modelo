@@ -185,11 +185,10 @@ body { margin: 0; }
   <nav class="tabs" aria-label="Secciones">
     <a href="#resumen"><b>1</b>Resumen</a>
     <a href="#small"><b>2</b>Small caps</a>
-    <a href="#sp500"><b>3</b>S&amp;P 500</a>
-    <a href="#cedears"><b>4</b>CEDEARs</a>
-    <a href="#balances"><b>5</b>Balances</a>
-    <a href="#backtest"><b>6</b>Backtest</a>
-    <a href="#checkpoints"><b>7</b>Checkpoints</a>
+    <a href="#cedears"><b>3</b>CEDEARs (S&amp;P 500)</a>
+    <a href="#balances"><b>4</b>Balances</a>
+    <a href="#backtest"><b>5</b>Backtest</a>
+    <a href="#checkpoints"><b>6</b>Checkpoints</a>
   </nav>
 
   <!-- ============ 1. RESUMEN ============ -->
@@ -204,12 +203,10 @@ body { margin: 0; }
       </div>
       <div class="note">Un tercio en SPY, un tercio en QQQ y un tercio en la regla B (versión CEDEARs, con sus pesos). Se compró al cierre del <span id="terIni"></span>; en cada revisión trimestral se vuelve a dejar cada parte en un tercio y la parte B toma la selección nueva. Precios en dólares de la acción original, sin costos.</div></div>
     <div class="leyenda-proy"><span><i style="background:var(--amber);opacity:.3"></i>Rango esperado (proyección)</span><span><i style="height:2px;background:var(--dim)"></i>Precio antes de elegirla</span><span><i style="height:2px;background:var(--up)"></i>Precio desde que se eligió</span><span><span class="tagB">B</span> Regla B, en prueba</span><span>Tocá una acción para ver el gráfico grande.</span></div>
-    <div class="grid row3">
+    <div class="grid row2b">
       <div class="p"><h2>Small caps elegidas <span id="resSmallTag"></span></h2><div id="resSmall"></div></div>
-      <div class="p"><h2>S&amp;P 500 · impulso 12 m <span id="resSpTag"></span></h2><div id="resSp"></div></div>
-      <div class="p"><h2>CEDEARs · impulso 12 m <span id="resCedTag"></span></h2><div id="resCed"></div></div>
-      <div class="p esB"><h2>S&amp;P 500 · regla B <span id="resSpBTag"></span></h2><div id="resSpB"></div></div>
-      <div class="p esB"><h2>CEDEARs · regla B <span id="resCedBTag"></span></h2><div id="resCedB"></div></div>
+      <div class="p"><h2>CEDEARs (S&amp;P 500) · impulso 12 m <span id="resCedTag"></span></h2><div id="resCed"></div></div>
+      <div class="p esB"><h2>CEDEARs (S&amp;P 500) · regla B <span id="resCedBTag"></span></h2><div id="resCedB"></div></div>
       <div class="p"><h2>Balances de las elegidas <span id="resBalTag"></span></h2><div class="tbl" id="resBal"></div></div>
     </div>
     <div class="p"><h2>Qué está probado y qué no</h2><ul class="ins" id="resProbado"></ul></div>
@@ -247,35 +244,9 @@ body { margin: 0; }
     </details>
   </section>
 
-  <!-- ============ 3. S&P 500 ============ -->
-  <section class="tab" id="t-sp500">
-    <div class="kflex" style="flex-wrap:wrap"><h1>S&amp;P 500</h1><span class="sub" id="spSub"></span></div>
-    <div class="grid kpis" id="spKpis"></div>
-    <div class="cards" id="spCards"></div>
-    <div class="note">Regla nueva (desde el 10/11/2026): las 5 acciones del S&amp;P 500 que más subieron en 12 meses (sin contar el último mes), con más peso en las más operadas. Se revisa cada 3 meses: la que cerró bajo su stop se vende y entra la siguiente. La zona ámbar es el rango esperado a 3 meses; la línea roja, el stop.</div>
-    <div class="p"><h2>En una tabla <span>★ = principal</span></h2><div style="overflow-x:auto" id="spTop"></div></div>
-    <details class="mas">
-      <summary>Más detalle: por qué esta regla y qué cuidar</summary>
-      <div class="in"><div class="p"><ul class="ins">
-        <li>Se eligió entre 144 combinaciones mirando solo abril 2022 a diciembre 2024, y se comprobó en años que no se usaron: 2015-2017 le ganó a SPY en 8 de 13 arranques, 2018-2019 en 11, 2020-2021 en 12, 2025-2026 en 12.</li>
-        <li>Todo 2015-2026: 100 se hicieron 1.068 (caso del medio) contra 432 de SPY. Con 10 acciones: 793.</li>
-        <li>Perdió en 2018 (75 contra 93) y en 2023. En su peor momento cayó 49-59% desde el máximo (SPY 34%).</li>
-        <li>Está muy concentrada: hoy 9 de las 10 son de tecnología/memoria. Buena parte de la ganancia histórica vino de 5 acciones de chips.</li>
-        <li>No sirve en small caps: ahí perdió contra IWM en todos los arranques.</li>
-      </ul></div></div>
-    </details>
-    <div class="bloqueB">
-      <div class="kflex" style="flex-wrap:wrap"><h1>OTRA REGLA (B) · EN PRUEBA</h1><span class="sub" id="spBSub"></span></div>
-      <div class="note" style="margin:0">No es la regla de arriba: es una segunda forma de elegir que se sigue en papel durante 2 trimestres. De las acciones del S&amp;P 500 que están en la mitad que más subió en 12 meses, se quedan las 5 más baratas y rentables según la Magic Formula de Greenblatt (cuánto gana la empresa respecto de lo que vale y respecto del capital que usa). Mismo peso, stop y revisión cada 3 meses. En la prueba 2011-2026 tuvo mejor relación ganancia/riesgo que SPY (Sharpe 0,83 contra 0,76; peor caída −34% contra −49% de la regla de impulso), pero perdió contra SPY en 2023-2026.</div>
-      <div class="grid kpis" id="spBKpis"></div>
-      <div class="cards" id="spBCards"></div>
-      <div class="p esB"><h2>En una tabla <span>regla B</span></h2><div style="overflow-x:auto" id="spBTop"></div></div>
-    </div>
-  </section>
-
   <!-- ============ 4. CEDEARs ============ -->
   <section class="tab" id="t-cedears">
-    <div class="kflex" style="flex-wrap:wrap"><h1>CEDEARs</h1><span class="sub" id="cedSub"></span></div>
+    <div class="kflex" style="flex-wrap:wrap"><h1>CEDEARs (S&amp;P 500)</h1><span class="sub" id="cedSub"></span></div>
     <div class="grid kpis" id="cedKpis"></div>
     <div class="cards" id="cedCards"></div>
     <div class="note">Misma regla que el S&amp;P 500, pero solo entre las empresas del S&amp;P 500 que tienen CEDEAR en BYMA. Precio en dólares de la acción original (no el del CEDEAR en pesos). La zona ámbar es el rango esperado a 3 meses; la línea roja, el stop.</div>
@@ -427,14 +398,14 @@ const SMALL = D.predicciones.map(p => ({ t: p.ticker, e: p.empresa || "", mercad
 const VEND = D.vendidas_small || [];
 const SPL_TODAS = TOP.map(t => ({ t: t.t, e: t.e, mercado: "sp", inicio: SPD.fecha, vence: SPD.vence, px: t.px, k: Math.log(t.techo / t.px),
   piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, rango: t.rango, stop: t.stop, peso: t.peso, grupo: t.grupo }));
-const SPL = SPL_TODAS.filter(e => e.cedear); // pedido de Francisco (11/11/2026): del S&P solo las que tienen CEDEAR
+const SPL = []; // pedido de Francisco (11/11/2026): sin listas del S&P; quedan solo los CEDEARs (S&P 500)
 const CD = D.cedears || { top: [], embudo: [], evaluadas: 0, total: 0 };
 const CED = CD.top.map(t => ({ t: t.t, e: t.e, mercado: "ced", inicio: CD.fecha, vence: CD.vence, px: t.px, k: Math.log(t.techo / t.px),
   piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, sp: t.sp, stop: t.stop, peso: t.peso, grupo: t.grupo }));
 const IMP = SPD.regla === "impulso12";
 const aB = (g, merc) => g ? g.top.map(t => ({ t: t.t, e: t.e, mercado: merc, regla: "B", inicio: g.fecha, vence: g.vence, px: t.px, k: Math.log(t.techo / t.px),
   piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, stop: t.stop, peso: t.peso, grupo: "b", mf: t.mf, per: t.per })) : [];
-const SPB_TODAS = aB(SPD.b, "sp"), SPB = SPB_TODAS.filter(e => e.cedear), CEDB = aB(CD.b, "ced");
+const SPB_TODAS = aB(SPD.b, "sp"), SPB = [], CEDB = aB(CD.b, "ced");
 const SP_SIN = [...SPL_TODAS, ...SPB_TODAS].filter(e => !e.cedear).map(e => e.t).filter((t, i, l) => l.indexOf(t) === i);
 const conteo = l => `${l.filter(e => e.grupo === "principal").length} principales ★ + ${l.filter(e => e.grupo === "siguiente").length} siguientes`;
 const grupoTag = e => e.grupo === "b" ? '<span class="tagB">REGLA B · EN PRUEBA</span>' : e.grupo === "principal" ? '<span class="tag" style="margin:0;color:var(--amber);border-color:var(--amber)">PRINCIPAL</span>' : e.grupo === "siguiente" ? '<span class="tag" style="margin:0">SIGUIENTE</span>' : "";
@@ -589,23 +560,18 @@ function pintarResumen() {
   const a = resumenGrupo(SMALL, "IWM"), b = resumenGrupo(SPL, "SPY"), c = resumenGrupo(CED, "SPY"), tot = a.st.length + b.st.length + c.st.length;
   const bB = resumenGrupo([...SPB, ...CEDB.filter(e => !SPB.some(x => x.t === e.t))], "SPY");
   const ultF = PX.fechas.length ? PX.fechas[PX.fechas.length - 1] : "";
-  $("resSub").textContent = `Elegidas del ${fecha(SMALL[0]?.inicio)} (small) y ${fecha(SPD.fecha)} (S&P y CEDEARs) · precios al ${fecha(ultF)}`;
+  $("resSub").textContent = `Elegidas del ${fecha(SMALL[0]?.inicio)} (small) y ${fecha(SPD.fecha)} (CEDEARs) · precios al ${fecha(ultF)}`;
   $("resKpis").innerHTML = [
     kpi("Small caps elegidas", `<span class="${cls(a.prom)}">${pct(a.prom)}</span>`, `promedio de las ${SMALL.length} · Russell 2000 (IWM) <span class="${cls(a.ref)}">${pct(a.ref)}</span>`),
-    kpi("S&P 500 elegidas", `<span class="${cls(b.prom)}">${pct(b.prom)}</span>`, `promedio de las ${SPL.length} · S&P 500 (SPY) <span class="${cls(b.ref)}">${pct(b.ref)}</span>`),
-    kpi("CEDEARs elegidos", `<span class="${cls(c.prom)}">${pct(c.prom)}</span>`, `promedio de los ${CED.length} · S&P 500 (SPY) <span class="${cls(c.ref)}">${pct(c.ref)}</span>`),
-    ...(SPB.length ? [kpi("Regla B (en prueba)", `<span class="${cls(bB.prom)}">${pct(bB.prom)}</span>`, `promedio de las ${bB.st.length} (S&P y CEDEARs) · SPY <span class="${cls(bB.ref)}">${pct(bB.ref)}</span>`)] : []),
+    kpi("CEDEARs · impulso 12 m", `<span class="${cls(c.prom)}">${pct(c.prom)}</span>`, `promedio de los ${CED.length} · S&P 500 (SPY) <span class="${cls(c.ref)}">${pct(c.ref)}</span>`),
+    ...(CEDB.length ? [kpi("CEDEARs · regla B", `<span class="${cls(bB.prom)}">${pct(bB.prom)}</span>`, `promedio de los ${bB.st.length} · SPY <span class="${cls(bB.ref)}">${pct(bB.ref)}</span>`)] : []),
     kpi("Dentro de lo proyectado", `${a.enRango + b.enRango + c.enRango}<span class="small"> de ${tot}</span>`, `<span class="up">${a.arriba + b.arriba + c.arriba} por encima</span> · <span class="down">${a.abajo + b.abajo + c.abajo} por debajo</span>`),
-    kpi("Próxima revisión", `${dm(D.vence_small)} · ${dm(SPD.vence)}`, "small caps · S&P 500 y CEDEARs (cada 3 meses)", "am"),
+    kpi("Próxima revisión", `${dm(D.vence_small)} · ${dm(SPD.vence)}`, "small caps · CEDEARs (cada 3 meses)", "am"),
   ].join("");
   $("resSmallTag").textContent = plazoTag(SMALL, `${SMALL.length} en cartera · 3 meses`);
   $("resSmall").innerHTML = listaFilas(SMALL);
-  $("resSpTag").textContent = plazoTag(SPL, IMP ? `${conteo(SPL)} · con CEDEAR` : `${SPL.length} de ${SPD.evaluadas} · 1 mes`);
-  $("resSp").innerHTML = listaFilas(SPL);
   $("resCedTag").textContent = plazoTag(CED, IMP ? `5 principales ★ + 5 siguientes · 3 meses` : `${CED.length} de ${CD.evaluadas} · 1 mes`);
   $("resCed").innerHTML = listaFilas(CED);
-  $("resSpBTag").textContent = SPB.length ? `${SPB.length} con CEDEAR · Magic Formula` : "sin datos";
-  $("resSpB").innerHTML = listaFilas(SPB);
   $("resCedBTag").textContent = CEDB.length ? `Magic Formula · 3 meses` : "sin datos";
   $("resCedB").innerHTML = listaFilas(CEDB);
   const ELEGB = [...SMALL, ...SPL, ...CED, ...SPB, ...CEDB].filter((e, i, l) => l.findIndex(x => x.t === e.t) === i).map(e => {
@@ -617,7 +583,7 @@ function pintarResumen() {
     `<tr><td>${fecha(f)}</td><td>${tk(e.t)}<div class="small" style="margin:0">${MERC[e.mercado]}</div></td><td>${resCorto(r)}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : r?.mov_tipico_pct != null ? "±" + num(r.mov_tipico_pct, 1) + "%" : "—"}</td></tr>`))
     : `<div class="small">Ninguna de las elegidas tiene balance en estas semanas.</div>`;
   $("resProbado").innerHTML = [
-    `<b>S&P 500 y CEDEARs (regla nueva):</b> las 5 que más subieron en 12 meses, revisando cada 3 meses. En la prueba 2015-2026 le ganó a SPY en 12 de 13 arranques (1.068 contra 432), pero con caídas de hasta 59% y muy concentrada en tecnología.`,
+    `<b>CEDEARs (S&P 500), regla de impulso:</b> las 5 que más subieron en 12 meses, revisando cada 3 meses. En la prueba 2015-2026 le ganó a SPY en 12 de 13 arranques (1.068 contra 432), pero con caídas de hasta 59% y muy concentrada en tecnología.`,
     `<b>Regla B (en prueba):</b> de las que más subieron en 12 meses, las 5 más baratas y rentables por la Magic Formula. En 2011-2026 tuvo mejor ganancia por riesgo que SPY (Sharpe 0,83 contra 0,76) y caídas más chicas (−34%), pero perdió contra SPY en 2023-2026. Se sigue en papel 2 trimestres.`,
     `<b>Small caps (cascada):</b> en las pruebas no le ganó a IWM. Se sigue en papel; cada 3 meses se reemplazan solo las que tocaron el stop.`,
     `<b>Rangos:</b> sirven para saber cuánto se puede mover cada acción. Si quedan adentro ~2 de cada 3 veces, están bien calibrados.`,
@@ -1052,16 +1018,17 @@ function pintarCheckpoints() {
 }
 pintarCheckpoints();
 
-const TABS = ["resumen", "small", "sp500", "cedears", "balances", "backtest", "checkpoints"];
+const TABS = ["resumen", "small", "cedears", "balances", "backtest", "checkpoints"];
+if (location.hash === "#sp500") location.replace("#cedears");
 function mostrar() {
   const t = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "resumen";
   TABS.forEach(x => { $("t-" + x).hidden = x !== t; });
   document.querySelectorAll(".tabs a").forEach(a => a.getAttribute("href") === "#" + t ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
 }
 addEventListener("hashchange", mostrar); mostrar();
-addEventListener("keydown", e => { if (/^[1-7]$/.test(e.key) && !e.target.closest("input,textarea")) location.hash = TABS[e.key - 1]; });
+addEventListener("keydown", e => { if (/^[1-6]$/.test(e.key) && !e.target.closest("input,textarea")) location.hash = TABS[e.key - 1]; });
 
-function pintarTodo() { pintarTercios(); pintarResumen(); pintarSmall(); pintarSp(); pintarCed(); pintarB(SPB, "sp", false); pintarB(CEDB, "ced", true); }
+function pintarTodo() { pintarTercios(); pintarResumen(); pintarSmall(); pintarCed(); pintarB(CEDB, "ced", true); }
 pintarTodo();
 
 // ================= cinta de precios y tiempo real =================
