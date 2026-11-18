@@ -79,10 +79,7 @@ section.tab[hidden], .drawer[hidden] { display: none; }
 .tk:hover, .tk:focus-visible { color: var(--amber); border-bottom-color: var(--amber); outline: none; }
 .chips .tk { border: 0; font-weight: 500; }
 .tape { position: relative; overflow: hidden; border: 1px solid var(--line); background: var(--panel); -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
-.tape .rail { display: flex; width: max-content; animation: cinta var(--dur, 90s) linear infinite; }
-.tape:hover .rail, .tape:focus-within .rail { animation-play-state: paused; }
-@keyframes cinta { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .tape { overflow-x: auto; -webkit-mask-image: none; mask-image: none; } .tape .rail { animation: none; } }
+.tape .rail { display: flex; width: max-content; will-change: transform; }
 .tape .q i { font-style: normal; font-size: 9.5px; letter-spacing: .06em; color: var(--dim); border: 1px solid var(--line); padding: 0 3px; }
 .tape .q { flex: 0 0 auto; display: flex; gap: 8px; align-items: baseline; padding: 6px 12px; border-right: 1px solid var(--line); font-variant-numeric: tabular-nums; background: none; border-top: 0; border-bottom: 0; border-left: 0; color: var(--fg); font: 12px var(--mono); cursor: pointer; }
 .tape .q:hover { background: #17140f; }
@@ -205,7 +202,6 @@ details.mas .p { background: var(--bg); }
       <div class="p"><h2>Small caps elegidas <span id="resSmallTag"></span></h2><div id="resSmall"></div></div>
       <div class="p"><h2>CEDEARs (S&amp;P 500) · impulso 12 m <span id="resCedTag"></span></h2><div id="resCed"></div></div>
       <div class="p esB"><h2>CEDEARs (S&amp;P 500) · regla B <span id="resCedBTag"></span></h2><div id="resCedB"></div></div>
-      <div class="p"><h2>Balances de las elegidas <span id="resBalTag"></span></h2><div class="tbl" id="resBal"></div></div>
     </div>
     <div class="p"><h2>Qué está probado y qué no</h2><ul class="ins" id="resProbado"></ul></div>
   </section>
@@ -387,6 +383,10 @@ const reac = r => !r ? "—" : r.reaccion == null ? `<span class="small" style="
 const resCorto = r => r ? `${pillRes(r)} ${reac(r)}` : `<span class="pill">Pendiente</span>`;
 const PX = D.precios || { fechas: [], cierres: {} };
 const VIVO = {}; // cotizaciones de /api/cotizaciones (solo en Vercel)
+let INTRA = PX.intradia || null; // cartera 1/3 cada 15 min (bajar_precios.py; en Vercel se actualiza con /api/intradia)
+const _fNY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+const _fAR = new Intl.DateTimeFormat("es-AR", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit", hour12: false });
+const diaNY = s => _fNY.format(new Date(s * 1000)), horaAR = s => _fAR.format(new Date(s * 1000));
 $("act").textContent = `Actualizado ${fecha(D.actualizado)}`;
 
 // ================= las elegidas y su proyección =================
@@ -572,14 +572,6 @@ function pintarResumen() {
   $("resCed").innerHTML = listaFilas(CED);
   $("resCedBTag").textContent = CEDB.length ? `Magic Formula · 3 meses` : "sin datos";
   $("resCedB").innerHTML = listaFilas(CEDB);
-  const ELEGB = [...SMALL, ...SPL, ...CED, ...SPB, ...CEDB].filter((e, i, l) => l.findIndex(x => x.t === e.t) === i).map(e => {
-    const fila = (e.mercado === "small" ? balSm : balSp).find(r => r.ticker === e.t), r = resDe(e.t), f = r ? r.fecha : fila?.fecha || e.bal;
-    return { e, fila, r, f };
-  }).filter(x => x.r || (x.f && x.f >= D.actualizado)).sort((a, b) => !!b.r - !!a.r || (a.r ? b.f.localeCompare(a.f) : a.f.localeCompare(b.f)));
-  $("resBalTag").textContent = ELEGB.length ? `${ELEGB.filter(x => x.r).length} presentaron · ${ELEGB.filter(x => !x.r).length} por presentar` : "ninguna";
-  $("resBal").innerHTML = ELEGB.length ? tabla([["Día"], ["Acción"], ["Resultado"], ["Mueve típico", "r"]], ELEGB.map(({ e, fila, r, f }) =>
-    `<tr><td>${fecha(f)}</td><td>${tk(e.t)}<div class="small" style="margin:0">${MERC[e.mercado]}</div></td><td>${resCorto(r)}</td><td class="r am">${fila ? "±" + num(fila.movimiento_tipico_pct, 1) + "%" : r?.mov_tipico_pct != null ? "±" + num(r.mov_tipico_pct, 1) + "%" : "—"}</td></tr>`))
-    : `<div class="small">Ninguna de las elegidas tiene balance en estas semanas.</div>`;
   $("resProbado").innerHTML = [
     `<b>CEDEARs (S&P 500), regla de impulso:</b> las 5 que más subieron en 12 meses, revisando cada 3 meses. En la prueba 2015-2026 le ganó a SPY en 12 de 13 arranques (1.068 contra 432), pero con caídas de hasta 59% y muy concentrada en tecnología.`,
     `<b>Regla B (en prueba):</b> de las que más subieron en 12 meses, las 5 más baratas y rentables por la Magic Formula. En 2011-2026 tuvo mejor ganancia por riesgo que SPY (Sharpe 0,83 contra 0,76) y caídas más chicas (−34%), pero perdió contra SPY en 2023-2026. Se sigue en papel 2 trimestres.`,
@@ -877,14 +869,31 @@ function pintarTercios() {
     ...["SPY", "QQQ", "B"].map(k => { const v = parte(k), m = montoParte(k); return kpi(k === "B" ? "Parte regla B" : "Parte " + k, `USD ${miles(v)}`, `<span class="${cls(v / m - 1)}">${pct(v / m - 1)}</span> · hoy ${num(v / fin * 100, 0)}% de la cartera`); }),
   ].join("");
   // índice base 100 el día de la compra, con 3 meses de antes (cómo habría ido la misma mezcla) para tener contexto
-  const todas = serie("SPY").map(p => p.f), k0 = Math.max(0, todas.indexOf(T.inicio) - (terAntes ? 63 : 0)), fs = todas.slice(k0);
+  // "Desde la compra": un punto cada 15 minutos (Yahoo) desde el cierre del día de la compra; "con 3 meses antes": cierres diarios
   const pr = (t, f) => { let v = P[t][f]; if (v == null) { const ks = Object.keys(P[t]).filter(k => k <= f).sort(); v = P[t][ks[ks.length - 1]]; } return v; };
-  const idxDe = filas => { const peso = filas.reduce((a, r) => a + r.monto, 0); return fs.map(f => 100 * filas.reduce((a, r) => a + r.monto / peso * ((pr(r.t, f) ?? p0(r)) / p0(r)), 0)); };
+  const pts = [], I = INTRA, conIntra = !terAntes && I && I.ts && I.ts.length && T.filas.every(r => I.cierres[r.t]);
+  if (conIntra) {
+    pts.push({ dia: T.inicio, hora: "cierre", px: Object.fromEntries(T.filas.map(r => [r.t, p0(r)])) });
+    const ult = { ...pts[0].px };
+    I.ts.forEach((s, i) => {
+      T.filas.forEach(r => { const v = I.cierres[r.t][i]; if (v != null) ult[r.t] = v; });
+      const dia = diaNY(s); if (dia > T.inicio) pts.push({ dia, hora: horaAR(s), s, px: { ...ult } });
+    });
+    const sv = Math.max(...T.filas.map(r => VIVO[r.t]?.t || 0)); // precio en vivo (Finnhub) si es más nuevo que el último punto
+    if (sv > (pts[pts.length - 1].s || 0) + 60) pts.push({ dia: diaNY(sv), hora: horaAR(sv), s: sv, vivo: true, px: Object.fromEntries(T.filas.map(r => [r.t, VIVO[r.t]?.p || ult[r.t]])) });
+  } else {
+    const todas = serie("SPY").map(p => p.f), k0 = Math.max(0, todas.indexOf(T.inicio) - (terAntes ? 63 : 0));
+    todas.slice(k0).forEach(f => pts.push({ dia: f, px: Object.fromEntries(T.filas.map(r => [r.t, pr(r.t, f) ?? p0(r)])) }));
+  }
+  const idxDe = filas => { const peso = filas.reduce((a, r) => a + r.monto, 0); return pts.map(q => 100 * filas.reduce((a, r) => a + r.monto / peso * (q.px[r.t] / p0(r)), 0)); };
   const IX = { "Cartera 1/3": idxDe(T.filas), "S&P 500 (SPY)": idxDe(T.filas.filter(r => r.parte === "SPY")), "QQQ": idxDe(T.filas.filter(r => r.parte === "QQQ")), "Regla B": idxDe(T.filas.filter(r => r.parte === "B")) };
-  terGrafico($("terGraf"), fs, IX, fs.indexOf(T.inicio));
-  window.__terRedibujar = () => terGrafico($("terGraf"), fs, IX, fs.indexOf(T.inicio));
+  const i0 = pts.findIndex(q => q.dia === T.inicio);
+  terGrafico($("terGraf"), pts, IX, i0);
+  window.__terRedibujar = () => terGrafico($("terGraf"), pts, IX, i0);
   if (!window.__terResize && window.ResizeObserver) { window.__terResize = true; let tam = ""; new ResizeObserver(es => { const r = es[0].contentRect, k = Math.round(r.width) + "x" + Math.round(r.height); if (r.width && k !== tam) { tam = k; window.__terRedibujar(); } }).observe($("terGraf")); }
-  $("terLey").innerHTML = Object.keys(IX).map(k => `<span><i style="background:${TER_COL[k]}"></i>${k} <b class="${cls(IX[k][IX[k].length - 1] - 100)}">${num(IX[k][IX[k].length - 1], 1)}</b></span>`).join("") + (terAntes ? '<span>Punteado: antes de la compra (cómo habría ido)</span>' : '');
+  const colPpal = IX["Cartera 1/3"][pts.length - 1] >= 100 ? "var(--up)" : "var(--down)";
+  $("terLey").innerHTML = Object.keys(IX).map(k => `<span><i style="background:${k === "Cartera 1/3" ? colPpal : TER_COL[k]}"></i>${k} <b class="${cls(IX[k][IX[k].length - 1] - 100)}">${num(IX[k][IX[k].length - 1], 1)}</b></span>`).join("")
+    + (terAntes ? '<span>Punteado: antes de la compra (cómo habría ido)</span>' : conIntra ? `<span>Un punto cada ${I.intervalo === "1h" ? "hora" : I.intervalo.replace("m", " min")} · horario de Argentina</span>` : "");
   $("terSeg").onclick = ev => { const b = ev.target.closest("button"); if (!b) return; terAntes = b.dataset.v === "antes"; $("terSeg").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); pintarTercios(); };
   terTorta(T.filas.map(r => ({ t: r.t, parte: r.parte, v: r.monto * (ult[r.t] ?? p0(r)) / p0(r) })), fin);
   $("terTabla").innerHTML = tabla([["Parte"], ["Activo"], ["CEDEARs", "r"], ["Puesto", "r"], ["Compra", "r"], ["Hoy", "r"], ["Cambio", "r"], ["Vale hoy", "r"]],
@@ -906,19 +915,43 @@ function terTorta(items, total) {
     <ul>${items.map(it => `<li><i style="background:${it.c}"></i>${it.t} <b>${num(it.v / total * 100, 1)}%</b></li>`).join("")}</ul></div>`;
 }
 const TER_COL = { "Cartera 1/3": "var(--up)", "S&P 500 (SPY)": "#c9c2b6", "QQQ": "#c08cff", "Regla B": "var(--blue)" };
-function terGrafico(el, f, S, i0) {
-  el.innerHTML = ""; const Wc = Math.max(300, Math.round(el.clientWidth || 620)), Hc = Math.max(260, Math.round(el.clientHeight || 280)), m = { l: 40, r: 12, t: 12, b: 22 }, n = f.length, nombres = Object.keys(S);
+// gráfico estilo terminal de trading: línea de la cartera con área degradada (verde si está arriba de 100, roja si está abajo),
+// línea punteada en 100 (la compra) y el último valor de cada serie marcado sobre el eje derecho
+function terGrafico(el, pts, S, i0) {
+  el.innerHTML = ""; const Wc = Math.max(300, Math.round(el.clientWidth || 620)), Hc = Math.max(260, Math.round(el.clientHeight || 280)), m = { l: 6, r: 58, t: 14, b: 24 }, n = pts.length, nombres = Object.keys(S);
+  const P0 = "Cartera 1/3", ppal = S[P0], fin = ppal[n - 1], col = fin >= 100 ? "var(--up)" : "var(--down)", colHex = fin >= 100 ? "#2fd47a" : "#ff4d4d";
   const vals = nombres.flatMap(k => S[k]); let lo = Math.min(...vals, 100), hi = Math.max(...vals, 100);
-  const paso = niceStep((hi - lo) / 4 || 1); lo = Math.floor(lo / paso) * paso; hi = Math.ceil(hi / paso) * paso;
-  const x = i => m.l + (Wc - m.l - m.r) * i / Math.max(n - 1, 1), y = v => m.t + (Hc - m.t - m.b) * (hi - v) / (hi - lo);
-  let g = ""; for (let v = lo; v <= hi + 1e-9; v += paso) g += `<line x1="${m.l}" x2="${Wc - m.r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)" ${Math.abs(v - 100) < 1e-9 ? "" : 'stroke-dasharray="2 4"'}/><text x="${m.l - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${num(v, paso < 1 ? 1 : 0)}</text>`;
-  if (i0 >= 0) g += `<rect x="${x(i0).toFixed(1)}" y="${m.t}" width="${(Wc - m.r - x(i0)).toFixed(1)}" height="${Hc - m.t - m.b}" fill="var(--up)" opacity=".05"/><line x1="${x(i0).toFixed(1)}" x2="${x(i0).toFixed(1)}" y1="${m.t}" y2="${Hc - m.b}" stroke="var(--dim)" stroke-dasharray="3 3"/><text x="${(i0 === 0 ? x(i0) + 6 : x(i0) - 4).toFixed(1)}" y="${Hc - m.b - 6}" text-anchor="${i0 === 0 ? "start" : "end"}">compra ${dm(f[i0])}</text>`;
-  [0, n - 1].forEach((i, k) => { g += `<text x="${x(i).toFixed(1)}" y="${Hc - 6}" text-anchor="${k ? "end" : "start"}">${fecha(f[i])}</text>`; });
-  const tramo = (k, a, b, dash) => `<path d="${S[k].slice(a, b + 1).map((v, j) => `${j ? "L" : "M"}${x(a + j).toFixed(1)} ${y(v).toFixed(1)}`).join("")}" fill="none" stroke="${TER_COL[k]}" stroke-width="${k === "Cartera 1/3" ? 2.4 : 1.4}" ${dash ? 'stroke-dasharray="3 3" opacity=".6"' : ""}/>`;
-  g += nombres.slice().reverse().map(k => (i0 > 0 ? tramo(k, 0, i0, true) : "") + tramo(k, Math.max(i0, 0), n - 1, false)).join("");
-  g += `<circle cx="${x(n - 1).toFixed(1)}" cy="${y(S["Cartera 1/3"][n - 1]).toFixed(1)}" r="3.5" fill="var(--up)"/>`;
-  el.innerHTML = `<svg viewBox="0 0 ${Wc} ${Hc}" role="img" aria-label="Cartera 1/3 como índice base 100 contra SPY, QQQ y la regla B">${g}<line class="cx" y1="${m.t}" y2="${Hc - m.b}" stroke="var(--dim)" visibility="hidden"/><circle class="cd" r="0" visibility="hidden"/></svg><div class="tip" hidden></div>`;
-  hover(el, n, i => ({ x: x(i), y: y(S["Cartera 1/3"][i]), txt: `<b>${fecha(f[i])}</b>${i < i0 ? " · antes de la compra" : ""}<br>` + nombres.map(k => `<span style="color:${TER_COL[k]}">${k}</span> ${num(S[k][i], 1)}`).join("<br>") }), Wc, m);
+  const pad = (hi - lo) * .08 || .5; lo -= pad; hi += pad;
+  const paso = niceStep((hi - lo) / 5 || 1), dec = paso < 1 ? 1 : 0;
+  const x = i => m.l + (Wc - m.l - m.r) * i / Math.max(n - 1, 1), y = v => m.t + (Hc - m.t - m.b) * (hi - v) / (hi - lo), yb = Hc - m.b;
+  let g = `<defs><linearGradient id="terArea" x1="0" x2="0" y1="${y(Math.max(...ppal.slice(Math.max(i0, 0)))).toFixed(1)}" y2="${yb}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${colHex}" stop-opacity=".32"/><stop offset="1" stop-color="${colHex}" stop-opacity="0"/></linearGradient></defs>`;
+  for (let v = Math.ceil(lo / paso) * paso; v <= hi + 1e-9; v += paso) g += `<line x1="${m.l}" x2="${Wc - m.r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)" stroke-dasharray="1 5"/><text x="${Wc - m.r + 8}" y="${(y(v) + 3).toFixed(1)}">${num(v, dec)}</text>`;
+  g += `<line x1="${m.l}" x2="${Wc - m.r}" y1="${yb}" y2="${yb}" stroke="var(--line)"/><line x1="${Wc - m.r}" x2="${Wc - m.r}" y1="${m.t}" y2="${yb}" stroke="var(--line)"/>`;
+  // fechas abajo: el primer punto de cada día, sin que se pisen
+  const dias = pts.map((q, i) => (i === 0 && q.hora !== "cierre") || (i > 0 && q.dia !== pts[i - 1].dia) ? i : -1).filter(i => i >= 0), cada = Math.max(1, Math.ceil(dias.length / Math.max(2, Math.floor((Wc - m.l - m.r) / 52))));
+  let xAnt = -1e9; dias.filter((_, k) => k % cada === 0).forEach(i => { if (x(i) - xAnt < 44 || x(i) > Wc - m.r - 18) return; xAnt = x(i);
+    g += `<line x1="${x(i).toFixed(1)}" x2="${x(i).toFixed(1)}" y1="${yb}" y2="${yb + 4}" stroke="var(--dim)"/><text x="${x(i).toFixed(1)}" y="${Hc - 6}" text-anchor="${i === 0 ? "start" : "middle"}">${dm(pts[i].dia)}</text>`; });
+  if (i0 > 0) g += `<line x1="${x(i0).toFixed(1)}" x2="${x(i0).toFixed(1)}" y1="${m.t}" y2="${yb}" stroke="var(--dim)" stroke-dasharray="3 3"/><text x="${(x(i0) - 4).toFixed(1)}" y="${m.t + 10}" text-anchor="end">compra ${dm(pts[i0].dia)}</text>`;
+  // línea de referencia: 100 = valor el día de la compra
+  g += `<line x1="${m.l}" x2="${Wc - m.r}" y1="${y(100).toFixed(1)}" y2="${y(100).toFixed(1)}" stroke="var(--dim)" stroke-dasharray="1 3"/>`;
+  const camino = (k, a, b) => S[k].slice(a, b + 1).map((v, j) => `${j ? "L" : "M"}${x(a + j).toFixed(1)} ${y(v).toFixed(1)}`).join("");
+  const a0 = Math.max(i0, 0);
+  g += `<path d="${camino(P0, a0, n - 1)}L${x(n - 1).toFixed(1)} ${yb}L${x(a0).toFixed(1)} ${yb}Z" fill="url(#terArea)"/>`;
+  g += nombres.filter(k => k !== P0).map(k => (i0 > 0 ? `<path d="${camino(k, 0, i0)}" fill="none" stroke="${TER_COL[k]}" stroke-width="1" stroke-dasharray="3 3" opacity=".45"/>` : "")
+    + `<path d="${camino(k, a0, n - 1)}" fill="none" stroke="${TER_COL[k]}" stroke-width="1.2" stroke-linejoin="round" opacity=".8"/>`).join("");
+  if (i0 > 0) g += `<path d="${camino(P0, 0, i0)}" fill="none" stroke="${col}" stroke-width="1.4" stroke-dasharray="3 3" opacity=".6"/>`;
+  g += `<path d="${camino(P0, a0, n - 1)}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>`;
+  g += `<circle cx="${x(n - 1).toFixed(1)}" cy="${y(fin).toFixed(1)}" r="3.2" fill="${col}"/><line x1="${x(n - 1).toFixed(1)}" x2="${Wc - m.r}" y1="${y(fin).toFixed(1)}" y2="${y(fin).toFixed(1)}" stroke="${col}" stroke-dasharray="1 2" opacity=".7"/>`;
+  // etiquetas sobre el eje derecho (último valor de cada serie y la compra), corridas para que no se pisen
+  const et = [{ v: 100, txt: num(100, 1), bg: "#3a362f", fg: "var(--fg)", ref: true }, ...nombres.map(k => ({ v: S[k][n - 1], txt: num(S[k][n - 1], 1), bg: k === P0 ? col : TER_COL[k], fg: "#000", ppal: k === P0 }))]
+    .map(e => ({ ...e, yy: y(e.v) })).sort((a, b) => a.yy - b.yy);
+  const alto = 15; for (let k = 1; k < et.length; k++) if (et[k].yy - et[k - 1].yy < alto) et[k].yy = et[k - 1].yy + alto;
+  for (let k = et.length - 1; k >= 0; k--) { const tope = k === et.length - 1 ? yb - alto / 2 : et[k + 1].yy - alto; if (et[k].yy > tope) et[k].yy = tope; }
+  et.forEach(e => { g += `<rect x="${Wc - m.r + 2}" y="${(e.yy - alto / 2 + 1).toFixed(1)}" width="${m.r - 4}" height="${alto - 2}" rx="2" fill="${e.bg}"/><text x="${Wc - m.r / 2}" y="${(e.yy + 3.5).toFixed(1)}" text-anchor="middle" style="fill:${e.fg};font-weight:${e.ppal ? 600 : 500}">${e.txt}</text>`; });
+  const yRef = et.find(e => e.ref).yy;
+  g += `<rect x="${Wc - m.r - 50}" y="${(yRef - alto / 2 + 1).toFixed(1)}" width="48" height="${alto - 2}" rx="2" fill="#3a362f"/><text x="${Wc - m.r - 26}" y="${(yRef + 3.5).toFixed(1)}" text-anchor="middle" style="fill:var(--fg)">Compra</text>`;
+  el.innerHTML = `<svg viewBox="0 0 ${Wc} ${Hc}" role="img" aria-label="Cartera 1/3 como índice base 100 contra SPY, QQQ y la regla B">${g}<line class="cx" y1="${m.t}" y2="${yb}" stroke="var(--dim)" stroke-dasharray="2 3" visibility="hidden"/><circle class="cd" r="4" fill="${col}" stroke="#000" visibility="hidden"/></svg><div class="tip" hidden></div>`;
+  hover(el, n, i => ({ x: x(i), y: y(ppal[i]), txt: `<b>${fecha(pts[i].dia)}${pts[i].hora ? " " + pts[i].hora : ""}</b>${pts[i].vivo ? " · en vivo" : ""}${i < i0 ? " · antes de la compra" : ""}<br>` + nombres.map(k => `<span style="color:${k === P0 ? col : TER_COL[k]}">${k}</span> ${num(S[k][i], 2)}`).join("<br>") }), Wc, m);
 }
 
 // ================= 6b. Backtest anterior (small caps) =================
@@ -1077,7 +1110,7 @@ function dibujaTape(cambiados = []) {
   if (!caja.querySelector(".rail")) { // la lista va dos veces seguidas: al llegar a la mitad vuelve a empezar sin salto
     const items = (copia) => RELOJ.filter(t => cot(t)).map(t => `<button type="button" class="q" data-t="${t}"${copia ? ' tabindex="-1"' : ""} title="${GRUPO_T[t] ? "Elegida · " + GRUPO_T[t] : "Índice"}"><b>${t}</b>${GRUPO_T[t] ? `<i>${GRUPO_T[t]}</i>` : ""}<span class="px"></span><span class="ch"></span></button>`).join("");
     caja.innerHTML = `<div class="rail"><div style="display:flex">${items(false)}</div><div style="display:flex" aria-hidden="true">${items(true)}</div></div>`;
-    caja.querySelector(".rail").style.setProperty("--dur", Math.max(40, RELOJ.length * 4) + "s");
+    moverTape();
   }
   caja.querySelectorAll(".q").forEach(b => {
     const t = b.dataset.t, q = cot(t); if (!q) return; const ch = q.p / q.pc - 1;
@@ -1085,6 +1118,28 @@ function dibujaTape(cambiados = []) {
     const c = b.querySelector(".ch"); c.textContent = pct(ch, 2); c.className = "ch " + cls(ch);
     if (cambiados.includes(t)) { b.classList.remove("flash"); void b.offsetWidth; b.classList.add("flash"); }
   });
+}
+// la cinta se mueve con requestAnimationFrame (no con animación CSS): así no queda frenada
+// por un toque en el celular, por el foco de un botón ni por la opción "reducir movimiento".
+// Solo se pausa mientras el mouse está encima.
+let tapeX = 0, tapeT = 0, tapePausa = false, tapeMitad = 0, tapeLoop = false;
+function moverTape() {
+  const caja = $("tape"), rail = caja.querySelector(".rail"); if (!rail) return;
+  tapeMitad = rail.firstElementChild.offsetWidth;
+  if (tapeLoop) return; tapeLoop = true;
+  caja.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") tapePausa = true; });
+  caja.addEventListener("pointerleave", () => { tapePausa = false; });
+  const paso = t => {
+    const dt = tapeT ? Math.min(t - tapeT, 100) : 0; tapeT = t; // si la pestaña estuvo oculta no salta
+    tapeMitad = rail.firstElementChild.offsetWidth; // se mide siempre (cambia al cargar la letra o al girar el celular)
+    if (!tapePausa && tapeMitad > 0) {
+      tapeX += dt * 0.045; // píxeles por milisegundo (≈45 px por segundo)
+      if (tapeX >= tapeMitad) tapeX -= tapeMitad; // la lista va dos veces: al llegar a la mitad vuelve sin salto
+      rail.style.transform = `translate3d(${-tapeX}px,0,0)`;
+    }
+    requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
 }
 async function traerVivo() {
   try {
@@ -1108,6 +1163,16 @@ async function traerVivo() {
 }
 dibujaTape();
 traerVivo().then(ok => { if (ok) setInterval(traerVivo, 60000); });
+async function traerIntradia() { // precios cada 15 min de la cartera 1/3 (solo en Vercel; si falla queda lo que trae la página)
+  const T = D.tercios; if (!T || !INTRA) return false;
+  try {
+    const r = await fetch(`api/intradia?t=${[...new Set([...T.filas.map(x => x.t), "SPY", "QQQ"])].join(",")}&desde=${T.inicio}&i=${INTRA.intervalo || "15m"}`, { cache: "no-store" });
+    if (!r.ok) return false;
+    const j = await r.json(); if (!j.ts || !j.ts.length || j.ts[j.ts.length - 1] <= INTRA.ts[INTRA.ts.length - 1] || !T.filas.every(x => j.cierres[x.t])) return false;
+    INTRA = j; pintarTercios(); return true;
+  } catch (e) { return false; }
+}
+traerIntradia().then(ok => { if (ok) setInterval(traerIntradia, 5 * 60000); });
 
 // ================= detalle de una acción =================
 let abierta = null, antesN = 20;
