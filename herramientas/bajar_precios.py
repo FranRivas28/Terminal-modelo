@@ -1,4 +1,5 @@
 """Baja 6 meses de cierres diarios (Yahoo) de todas las acciones que aparecen en el dashboard -> precios.json.
+También baja precios cada 15 minutos (Yahoo) de la cartera 1/3 desde el día de la compra (gráfico del Resumen).
 Correr después de datos_dashboard.py y antes de volver a armarlo. No necesita instalar nada."""
 import json
 import urllib.request
@@ -34,5 +35,31 @@ out = {"fechas": fechas, "cierres": {}}
 for t, s in series.items():
     if sum(v is not None for v in s.values()) > 20:
         out["cierres"][t] = [None if s.get(f) is None else round(float(s[f]), 2) for f in fechas]
+
+
+# ---------- cartera 1/3: precios dentro del día desde la compra (gráfico del Resumen) ----------
+def bajar_intradia(t, desde, intervalo):
+    p1 = int(datetime.fromisoformat(desde).replace(tzinfo=timezone.utc).timestamp())
+    p2 = int(datetime.now(timezone.utc).timestamp())
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{t.replace('.', '-')}?period1={p1}&period2={p2}&interval={intervalo}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        r = json.loads(urllib.request.urlopen(req, timeout=20).read())["chart"]["result"][0]
+        return t, {s: c for s, c in zip(r["timestamp"], r["indicators"]["quote"][0]["close"]) if c is not None}
+    except Exception:
+        return t, {}
+
+
+ter = d.get("tercios")
+if ter and ter.get("filas"):
+    dias_desde = (datetime.now(timezone.utc).date() - datetime.fromisoformat(ter["inicio"]).date()).days
+    intervalo = "15m" if dias_desde <= 45 else "30m" if dias_desde <= 55 else "1h"  # Yahoo da 15 y 30 min solo de los últimos 60 días
+    tk = sorted({x["t"] for x in ter["filas"]} | {"SPY", "QQQ"})
+    with ThreadPoolExecutor(8) as ex:
+        intra = dict(ex.map(lambda t: bajar_intradia(t, ter["inicio"], intervalo), tk))
+    ts = sorted({s for v in intra.values() for s in v})
+    out["intradia"] = {"intervalo": intervalo, "desde": ter["inicio"], "ts": ts,
+                       "cierres": {t: [None if v.get(s) is None else round(float(v[s]), 3) for s in ts] for t, v in intra.items() if v}}
+    print("cartera 1/3 cada", intervalo + ":", len(ts), "puntos de", len(out["intradia"]["cierres"]), "activos")
 (AQUI / "precios.json").write_text(json.dumps(out))
 print(len(out["cierres"]), "de", len(tickers), "con precios;", fechas[-1])
