@@ -145,6 +145,9 @@ for clave, nombre in (("sp", "sp500"), ("cedears", "cedears")):
     b = trimestral(f"b_{nombre}")  # regla B en prueba (cartera/seleccion_b.py)
     if b:
         datos[clave]["b"] = b
+        ex = trimestral(f"b_extra_{nombre}")  # de la cartera 1/3 pero fuera de la lista B (UNH en lugar de MU): cartera/seleccion_b_extra.py
+        if ex:
+            b["extra"] = ex["top"]
 if (CART / "cartera_tercios.csv").exists():  # cartera simulada 1/3 SPY + 1/3 QQQ + 1/3 regla B (cartera/cartera_tercios.py)
     ct = pd.read_csv(CART / "cartera_tercios.csv")
     datos["tercios"] = {"inicio": ct.inicio.iloc[0], "revision": ct.revision.iloc[0], "capital": float(ct.monto_usd.sum()),

@@ -419,10 +419,11 @@ const IMP = SPD.regla === "impulso12";
 const aB = (g, merc) => g ? g.top.map(t => ({ t: t.t, e: t.e, mercado: merc, regla: "B", inicio: g.fecha, vence: g.vence, px: t.px, k: Math.log(t.techo / t.px),
   piso: t.piso, techo: t.techo, p: t.p, bal: t.bal, sec: t.sec, cedear: t.cedear, ratio: t.ratio, stop: t.stop, peso: t.peso, grupo: "b", mf: t.mf, per: t.per })) : [];
 const SPB_TODAS = aB(SPD.b, "sp"), SPB = [], CEDB = aB(CD.b, "ced");
+const CEDB_EXTRA = CD.b && CD.b.extra ? aB({ ...CD.b, top: CD.b.extra }, "ced").map(e => ({ ...e, reemplazo: true })) : []; // de la cartera 1/3 pero fuera de la lista B (UNH en lugar de MU)
 const SP_SIN = [...SPL_TODAS, ...SPB_TODAS].filter(e => !e.cedear).map(e => e.t).filter((t, i, l) => l.indexOf(t) === i);
 const conteo = l => `${l.filter(e => e.grupo === "principal").length} principales ★ + ${l.filter(e => e.grupo === "siguiente").length} siguientes`;
 const grupoTag = e => e.grupo === "b" ? '<span class="tagB">REGLA B · EN PRUEBA</span>' : e.grupo === "principal" ? '<span class="tag" style="margin:0;color:var(--amber);border-color:var(--amber)">PRINCIPAL</span>' : e.grupo === "siguiente" ? '<span class="tag" style="margin:0">SIGUIENTE</span>' : "";
-const POR = {}; [...CEDB, ...SPB, ...CED, ...SMALL, ...SPL].forEach(e => { POR[e.t] = e; }); // si está en las dos reglas, manda la de impulso
+const POR = {}; [...CEDB_EXTRA, ...CEDB, ...SPB, ...CED, ...SMALL, ...SPL].forEach(e => { POR[e.t] = e; }); // si está en las dos reglas, manda la de impulso
 const EN_B = new Set([...SPB, ...CEDB].map(e => e.t));
 const MERC = { small: "Small cap", sp: "S&P 500", ced: "CEDEAR" };
 
@@ -1263,7 +1264,7 @@ function detalle(t, foco = true) {
   abierta = t;
   const e = POR[t], q = cot(t), ops = D.operaciones.filter(o => o.t === t);
   const bal = balSp.concat(balSm).find(x => x.ticker === t);
-  let html = `<div class="kflex"><div><div class="lbl">${e ? MERC[e.mercado] + (e.regla === "B" ? " · regla B (en prueba)" : " · elegida" + (EN_B.has(t) ? " · también en regla B" : "")) : "Acción"}</div><div class="big">${limpioT(t)}</div><div class="small">${esc(e ? e.e : "")}</div></div><button type="button" class="x" id="cerrar">Cerrar ✕</button></div>`;
+  let html = `<div class="kflex"><div><div class="lbl">${e ? MERC[e.mercado] + (e.reemplazo ? " · cartera 1/3 · regla B, en lugar de MU" : e.regla === "B" ? " · regla B (en prueba)" : " · elegida" + (EN_B.has(t) ? " · también en regla B" : "")) : "Acción"}</div><div class="big">${limpioT(t)}</div><div class="small">${esc(e ? e.e : "")}</div></div><button type="button" class="x" id="cerrar">Cerrar ✕</button></div>`;
   if (q) { const ch = q.p / q.pc - 1;
     html += `<div class="kflex"><div class="big" style="font-size:32px">${num(q.p)}</div><div class="${cls(ch)}" style="font-size:16px">${pct(ch, 2)} hoy</div><span class="chip live ${VIVO[t] ? "on" : ""}"><i></i>${VIVO[t] ? "En vivo" : "Cierre"}</span></div>`; }
   if (e) {
