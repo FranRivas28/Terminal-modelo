@@ -145,12 +145,19 @@ for clave, nombre in (("sp", "sp500"), ("cedears", "cedears")):
     b = trimestral(f"b_{nombre}")  # regla B en prueba (cartera/seleccion_b.py)
     if b:
         datos[clave]["b"] = b
+        ex = trimestral(f"b_extra_{nombre}")  # de la cartera 1/3 pero fuera de la lista B (UNH en lugar de MU): cartera/seleccion_b_extra.py
+        if ex:
+            b["extra"] = ex["top"]
 if (CART / "cartera_tercios.csv").exists():  # cartera simulada 1/3 SPY + 1/3 QQQ + 1/3 regla B (cartera/cartera_tercios.py)
     ct = pd.read_csv(CART / "cartera_tercios.csv")
-    datos["tercios"] = {"inicio": ct.inicio.iloc[0], "revision": ct.revision.iloc[0], "capital": float(ct.monto_usd.sum()),
-                        "efectivo": round(float(ct.capital.iloc[0] - ct.monto_usd.sum()), 2) if "capital" in ct else 0,
+    datos["tercios"] = {"inicio": ct.inicio.iloc[0], "revision": ct.revision.iloc[0], "capital": float(ct[ct.desde.isna()].monto_usd.sum() if "desde" in ct else ct.monto_usd.sum()),
+                        "efectivo": round(float(ct.capital.iloc[0] - (ct[ct.desde.isna()] if "desde" in ct else ct).monto_usd.sum()), 2) if "capital" in ct else 0,
                         "filas": [{"t": r.ticker, "parte": r.parte, "e": r.nombre, "peso": r.peso, "monto": r.monto_usd, "px": r.precio_entrada,
-                                   **({"n": int(r.cedears), "ratio": r.ratio} if "cedears" in ct else {})} for r in ct.itertuples()]}
+                                   **({"n": int(r.cedears), "ratio": r.ratio} if "cedears" in ct else {}),
+                                   # cambios por stop (cartera/cambio_stop.py): desde = día de compra, hasta = día de venta
+                                   **({"desde": r.desde, "ts_desde": int(r.ts_desde)} if "desde" in ct and isinstance(r.desde, str) else {}),
+                                   **({"hasta": r.hasta, "ts_hasta": int(r.ts_hasta), "px_venta": r.precio_venta} if "hasta" in ct and isinstance(r.hasta, str) else {})}
+                                  for r in ct.itertuples()]}
 if (CART / "vendidas_small.csv").exists():
     datos["vendidas_small"] = pd.read_csv(CART / "vendidas_small.csv").to_dict(orient="records")
 

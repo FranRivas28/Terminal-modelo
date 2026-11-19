@@ -19,13 +19,15 @@ tickers = sorted(set([x["t"] for x in d["sp"]["top"]] + [p["ticker"] for p in d[
 
 def bajar(t):
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{t.replace('.', '-')}?range=6mo&interval=1d"
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        r = json.loads(urllib.request.urlopen(req, timeout=20).read())["chart"]["result"][0]
-        fechas = [datetime.fromtimestamp(s, timezone.utc).date().isoformat() for s in r["timestamp"]]
-        return t, dict(zip(fechas, r["indicators"]["adjclose"][0]["adjclose"]))
-    except Exception:
-        return t, {}
+    for intento in range(3):  # Yahoo a veces falla una vez: se reintenta
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            r = json.loads(urllib.request.urlopen(req, timeout=20).read())["chart"]["result"][0]
+            fechas = [datetime.fromtimestamp(s, timezone.utc).date().isoformat() for s in r["timestamp"]]
+            return t, dict(zip(fechas, r["indicators"]["adjclose"][0]["adjclose"]))
+        except Exception:
+            pass
+    return t, {}
 
 
 with ThreadPoolExecutor(8) as ex:
@@ -35,6 +37,9 @@ out = {"fechas": fechas, "cierres": {}}
 for t, s in series.items():
     if sum(v is not None for v in s.values()) > 20:
         out["cierres"][t] = [None if s.get(f) is None else round(float(s[f]), 2) for f in fechas]
+# último y anterior cierre de todas (aunque Yahoo traiga poca historia): cambio de hoy del mapa de calor
+out["ultimos"] = {t: [round(float(v), 2) for v in [s[f] for f in sorted(s) if s[f] is not None][-2:]]
+                  for t, s in series.items() if sum(v is not None for v in s.values()) >= 2}
 
 
 # ---------- cartera 1/3: precios dentro del día desde la compra (gráfico del Resumen) ----------
@@ -61,5 +66,6 @@ if ter and ter.get("filas"):
     out["intradia"] = {"intervalo": intervalo, "desde": ter["inicio"], "ts": ts,
                        "cierres": {t: [None if v.get(s) is None else round(float(v[s]), 3) for s in ts] for t, v in intra.items() if v}}
     print("cartera 1/3 cada", intervalo + ":", len(ts), "puntos de", len(out["intradia"]["cierres"]), "activos")
+
 (AQUI / "precios.json").write_text(json.dumps(out))
 print(len(out["cierres"]), "de", len(tickers), "con precios;", fechas[-1])
