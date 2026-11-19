@@ -1,10 +1,7 @@
 """Baja 6 meses de cierres diarios (Yahoo) de todas las acciones que aparecen en el dashboard -> precios.json.
 También baja precios cada 15 minutos (Yahoo) de la cartera 1/3 desde el día de la compra (gráfico del Resumen).
-Y el valor de mercado de las elegidas (Finnhub) para el tamaño de los cuadros del mapa de calor.
 Correr después de datos_dashboard.py y antes de volver a armarlo. No necesita instalar nada."""
 import json
-import os
-import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -70,24 +67,5 @@ if ter and ter.get("filas"):
                        "cierres": {t: [None if v.get(s) is None else round(float(v[s]), 3) for s in ts] for t, v in intra.items() if v}}
     print("cartera 1/3 cada", intervalo + ":", len(ts), "puntos de", len(out["intradia"]["cierres"]), "activos")
 
-
-# ---------- mapa de calor del Resumen: tamaño de cada empresa (valor de mercado, Finnhub, en millones de USD) ----------
-def valor_mercado(t):
-    params = {"symbol": t}
-    if os.environ.get("FINNHUB_API_KEY"):  # en el entorno de Claude la clave la pone el proxy
-        params["token"] = os.environ["FINNHUB_API_KEY"]
-    try:
-        url = "https://finnhub.io/api/v1/stock/profile2?" + urllib.parse.urlencode(params)
-        v = json.loads(urllib.request.urlopen(url, timeout=20).read()).get("marketCapitalization")
-        return t, round(float(v), 1) if v else None
-    except Exception:
-        return t, None
-
-
-elegidas = sorted({p["ticker"] for p in d["predicciones"]} | {x["t"] for x in d.get("cedears", {}).get("top", [])}
-                  | {x["t"] for x in d.get("cedears", {}).get("b", {}).get("top", [])})
-with ThreadPoolExecutor(4) as ex:
-    out["mcap"] = {t: v for t, v in ex.map(valor_mercado, elegidas) if v}
-print("valor de mercado:", len(out["mcap"]), "de", len(elegidas))
 (AQUI / "precios.json").write_text(json.dumps(out))
 print(len(out["cierres"]), "de", len(tickers), "con precios;", fechas[-1])

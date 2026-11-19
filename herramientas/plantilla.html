@@ -164,15 +164,14 @@ details.mas .p { background: var(--bg); }
 .torta ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, auto)); gap: 4px 18px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .torta li i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
 /* ---- mapa de calor del Resumen ---- */
-#mapa { position: relative; height: 430px; background: var(--bg); overflow: hidden; }
-@media (max-width: 700px) { #mapa { height: 560px; } }
+#mapa { position: relative; height: 300px; background: var(--bg); overflow: hidden; }
+@media (max-width: 700px) { #mapa { height: 380px; } }
 .mg { position: absolute; box-sizing: border-box; border: 1px solid var(--line); }
 .mg > span { position: absolute; left: 0; right: 0; top: 0; height: 18px; padding: 0 6px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 18px; }
 .mt { position: absolute; box-sizing: border-box; border: 1px solid var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; color: #fff; text-align: center; line-height: 1.1; transition: filter .15s; }
 .mt:hover, .mt:focus-visible { filter: brightness(1.25); outline: 1px solid var(--fg); outline-offset: -1px; z-index: 1; }
 .mt b { font-family: var(--cond); font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
 .mt em { font-style: normal; font-variant-numeric: tabular-nums; opacity: .92; white-space: nowrap; }
-.mt sup { position: absolute; top: 3px; right: 4px; font-size: 9px; color: var(--blue); letter-spacing: .04em; }
 .mapaEsc { display: flex; align-items: center; gap: 0; margin-top: 8px; font-size: 10.5px; color: var(--dim); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
 .mapaEsc span { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; min-width: 44px; }
 .mapaEsc i { display: block; width: 100%; height: 6px; }
@@ -203,17 +202,16 @@ details.mas .p { background: var(--bg); }
   <section class="tab" id="t-resumen">
     <div class="kflex" style="flex-wrap:wrap"><h1>RESUMEN</h1><span class="sub" id="resSub"></span></div>
     <div class="grid kpis" id="resKpis"></div>
-    <div class="p" id="mapaBox"><div class="kflex" style="margin-bottom:8px;flex-wrap:wrap"><h2 style="margin:0">Mapa de calor <span id="mapaTag" style="white-space:normal"></span></h2><span class="spacer"></span><span class="seg" id="mapaSeg" role="group" aria-label="Cambio"><button type="button" data-v="1d" aria-pressed="true">Hoy</button><button type="button" data-v="1s" aria-pressed="false">1 semana</button><button type="button" data-v="1m" aria-pressed="false">1 mes</button><button type="button" data-v="eleg" aria-pressed="false">Desde elegida</button></span></div>
-      <div id="mapa" role="img" aria-label="Mapa de calor de las acciones e índices elegidos"></div>
-      <div class="mapaEsc" id="mapaEsc"></div>
-      <div class="note">Cada cuadro es una acción o índice que sigue la terminal. El color es cuánto subió (verde) o bajó (rojo); el tamaño, el valor de mercado de la empresa (los índices van del mismo tamaño). Una acción que está en las dos reglas de CEDEARs aparece una sola vez, con la marca <span style="color:var(--blue)">B</span>. Tocá un cuadro para ver su gráfico.</div></div>
     <div class="p" id="terBox" hidden><h2>Cartera 1/3 · simulación <span id="terTag"></span></h2>
       <div class="grid kpis" id="terKpis" style="margin-bottom:10px"></div>
       <div class="grid row2b">
         <div id="terIzq"><div class="kflex" style="margin-bottom:6px;flex-wrap:wrap"><span class="lbl">Índice: 100 = día de la compra</span><span class="seg" id="terSeg" role="group" aria-label="Período"><button type="button" data-v="compra" aria-pressed="true">Desde la compra</button><button type="button" data-v="antes" aria-pressed="false">Con 3 meses antes</button></span></div><div class="chart" id="terGraf"></div><div class="legend" id="terLey"></div></div>
         <div><div class="torta" id="terTorta"></div><div style="overflow-x:auto" id="terTabla"></div></div>
       </div>
-      <div class="note">La cartera del PDF: USD 1.000 en CEDEARs, un tercio en SPY, un tercio en QQQ y un tercio en la regla B (con UNH en lugar de MU, porque el CEDEAR de MU es muy caro para este monto). Cantidades enteras de CEDEARs, compradas al cierre del <span id="terIni"></span>; en cada revisión trimestral se vuelve a dejar cada parte en un tercio y la parte B toma la selección nueva. Precios en dólares de la acción original, sin costos.</div></div>
+      <div id="mapaBox" style="margin-top:14px"><div class="kflex" style="margin-bottom:8px;flex-wrap:wrap"><span class="lbl">Mapa de calor <span id="mapaTag" style="text-transform:none;letter-spacing:0"></span></span><span class="spacer"></span><span class="seg" id="mapaSeg" role="group" aria-label="Cambio"><button type="button" data-v="1d" aria-pressed="true">Hoy</button><button type="button" data-v="1s" aria-pressed="false">1 semana</button><button type="button" data-v="1m" aria-pressed="false">1 mes</button><button type="button" data-v="eleg" aria-pressed="false">Desde la compra</button></span></div>
+        <div id="mapa" role="img" aria-label="Mapa de calor de la cartera 1/3"></div>
+        <div class="mapaEsc" id="mapaEsc"></div></div>
+      <div class="note">La cartera del PDF: USD 1.000 en CEDEARs, un tercio en SPY, un tercio en QQQ y un tercio en la regla B (con UNH en lugar de MU, porque el CEDEAR de MU es muy caro para este monto). Cantidades enteras de CEDEARs, compradas al cierre del <span id="terIni"></span>; en cada revisión trimestral se vuelve a dejar cada parte en un tercio y la parte B toma la selección nueva. Precios en dólares de la acción original, sin costos. En el mapa de calor, el color es cuánto subió (verde) o bajó (rojo) y el tamaño es cuánta plata hay hoy en cada uno; tocá un cuadro para ver su gráfico.</div></div>
     <div class="leyenda-proy"><span><i style="background:var(--amber);opacity:.3"></i>Rango esperado (proyección)</span><span><i style="height:2px;background:var(--dim)"></i>Precio antes de elegirla</span><span><i style="height:2px;background:var(--up)"></i>Precio desde que se eligió</span><span><span class="tagB">B</span> Regla B, en prueba</span><span>Tocá una acción para ver el gráfico grande.</span></div>
     <div class="grid row2b">
       <div class="p"><h2>Small caps elegidas <span id="resSmallTag"></span></h2><div id="resSmall"></div></div>
@@ -1118,14 +1116,14 @@ addEventListener("keydown", e => { if (/^[1-6]$/.test(e.key) && !e.target.closes
 // ================= mapa de calor (Resumen) =================
 let mapaModo = "1d";
 const MAPA_TOPE = { "1d": 0.03, "1s": 0.06, "1m": 0.12, eleg: 0.12 }; // con este cambio el color ya es el más fuerte
-const MAPA_TXT = { "1d": "cambio de hoy", "1s": "cambio de 1 semana", "1m": "cambio de 1 mes", eleg: "cambio desde que se eligió" };
+const MAPA_TXT = { "1d": "cambio de hoy", "1s": "cambio de 1 semana", "1m": "cambio de 1 mes", eleg: "cambio desde la compra" };
 function cambioMapa(t, e) {
   if (mapaModo === "1d") { // precio en vivo si hay; si no, último cierre contra el anterior
     const q = VIVO[t]; if (q && q.p && q.pc) return q.p / q.pc - 1;
     const c = (PX.cierres[t] || (PX.ultimos || {})[t] || []).filter(x => x != null); return c.length > 1 ? c[c.length - 1] / c[c.length - 2] - 1 : null; }
   const s = serie(t); if (s.length < 2) return null;
   const ult = s[s.length - 1].v;
-  if (mapaModo === "eleg") { if (e) return ult / e.px - 1; return bench(t, CD.fecha); }
+  if (mapaModo === "eleg") return e ? ult / e.px - 1 : null;
   const n = mapaModo === "1s" ? 5 : 21, ant = s[Math.max(0, s.length - 1 - n)].v;
   return ult / ant - 1;
 }
@@ -1151,41 +1149,38 @@ function squarify(items, x, y, w, h) { // reparte el rectángulo en cuadros lo m
   return out;
 }
 function pintarMapa() {
-  const caja = $("mapa"); if (!caja) return;
+  const caja = $("mapa"), T = D.tercios; if (!caja || !T || !T.filas.length) return;
   const W = caja.clientWidth, H = caja.clientHeight; if (!W || !H) return;
-  const MC = PX.mcap || {}, tam = t => Math.sqrt(MC[t] || 1000); // raíz del valor de mercado: las chicas siguen viéndose
-  const yaImp = new Set(CED.map(e => e.t));
+  const precioHoy = t => { const q = VIVO[t]; if (q && q.p) return q.p; const c = (PX.cierres[t] || (PX.ultimos || {})[t] || []).filter(x => x != null); return c[c.length - 1]; };
+  const p0 = r => { const s = serie(r.t).filter(p => p.f <= T.inicio); return s.length && s[s.length - 1].f === T.inicio ? s[s.length - 1].v : r.px; };
+  const it = r => { const hoy = precioHoy(r.t), v = hoy ? r.monto * hoy / p0(r) : r.monto; return { t: r.t, nom: r.e, v, usd: v, e: { px: p0(r) } }; };
   const grupos = [
-    { n: "Índices", l: ["SPY", "QQQ", "IWM"].filter(t => PX.cierres[t]).map(t => ({ t, e: null, v: 1, nom: { SPY: "S&P 500", QQQ: "Nasdaq 100", IWM: "Russell 2000" }[t] })) },
-    { n: "Small caps elegidas", l: SMALL.map(e => ({ t: e.t, e, v: tam(e.t) })) },
-    { n: "CEDEARs · impulso 12 m", l: CED.map(e => ({ t: e.t, e, v: tam(e.t), b: EN_B.has(e.t), star: e.grupo === "principal" })) },
-    { n: "CEDEARs · regla B", l: CEDB.filter(e => !yaImp.has(e.t)).map(e => ({ t: e.t, e, v: tam(e.t) })) },
+    { n: "SPY y QQQ · 2/3", l: T.filas.filter(r => r.parte !== "B").map(it) },
+    { n: "Regla B · 1/3", l: T.filas.filter(r => r.parte === "B").map(it) },
   ].filter(g => g.l.length);
-  // cada grupo ocupa lugar según cuántas tiene; adentro, cada una según su valor de mercado
-  const cajas = squarify(grupos.map(g => ({ g, v: g.l.length })), 0, 0, W, H);
+  // cada parte y cada activo ocupan lugar según cuánta plata hay hoy en él
+  const cajas = squarify(grupos.map(g => ({ g, v: g.l.reduce((a, x) => a + x.v, 0) })), 0, 0, W, H);
   let html = "";
   cajas.forEach(({ g, x, y, w, h }) => {
     html += `<div class="mg" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"><span title="${esc(g.n)}">${esc(g.n)}</span></div>`;
-    const sumV = g.l.reduce((a, it) => a + it.v, 0);
     squarify(g.l, x + 1, y + 19, w - 2, h - 20).forEach(it => {
       const ch = cambioMapa(it.t, it.e), lado = Math.min(it.w, it.h);
-      const fs = Math.max(9, Math.min(26, it.w / ((it.t.length + (it.star ? 1.1 : 0)) * 0.62 + 0.8), it.h / 2.4));
-      const nombre = it.nom || (it.e ? it.e.e : "");
-      const tip = `${it.t}${nombre ? " · " + nombre : ""} · ${g.n}: ${pct(ch, 2)} (${MAPA_TXT[mapaModo]})`;
-      const txt = lado < 18 || it.w < 26 ? "" : `<b style="font-size:${fs}px">${it.star ? "★" : ""}${limpioT(it.t)}</b>${it.h > fs * 2.3 && it.w > 38 ? `<em style="font-size:${Math.max(9, fs * 0.62)}px">${pct(ch, 2)}</em>` : ""}`;
-      html += `<div class="mt" data-t="${it.t}" tabindex="0" role="button" title="${esc(tip)}" aria-label="${esc(tip)}" style="left:${it.x}px;top:${it.y}px;width:${it.w}px;height:${it.h}px;background:${colorMapa(ch)}">${txt}${it.b && lado > 30 ? '<sup title="también en la regla B">B</sup>' : ""}</div>`;
+      const fs = Math.max(9, Math.min(26, it.w / (it.t.length * 0.62 + 0.8), it.h / 2.6));
+      const tip = `${it.t} · ${it.nom}: ${pct(ch, 2)} (${MAPA_TXT[mapaModo]}) · USD ${miles(it.usd)} en la cartera`;
+      const chico = Math.max(9, fs * 0.6);
+      const txt = lado < 18 || it.w < 26 ? "" : `<b style="font-size:${fs}px">${limpioT(it.t)}</b>${it.h > fs * 2.3 && it.w > 38 ? `<em style="font-size:${chico}px">${pct(ch, 2)}</em>` : ""}${it.h > fs * 2.3 + chico * 2.6 && it.w > 60 ? `<em style="font-size:${chico * 0.85}px;opacity:.7">USD ${miles(it.usd)}</em>` : ""}`;
+      html += `<div class="mt" data-t="${it.t}" tabindex="0" role="button" title="${esc(tip)}" aria-label="${esc(tip)}" style="left:${it.x}px;top:${it.y}px;width:${it.w}px;height:${it.h}px;background:${colorMapa(ch)}">${txt}</div>`;
     });
   });
   caja.innerHTML = html;
   const tope = MAPA_TOPE[mapaModo], pasos = [-1, -2 / 3, -1 / 3, 0, 1 / 3, 2 / 3, 1].map(k => k * tope);
-  $("mapaEsc").innerHTML = pasos.map(v => `<span><i style="background:${colorMapa(v)}"></i>${v === 0 ? "0%" : pct(v, tope < 0.05 ? 0 : 0)}</span>`).join("");
-  const n = grupos.reduce((a, g) => a + g.l.length, 0);
-  $("mapaTag").textContent = `· ${n} activos · ${MAPA_TXT[mapaModo]}${mapaModo === "1d" ? (Object.keys(VIVO).length ? " · en vivo" : " · al cierre") : ""}`;
+  $("mapaEsc").innerHTML = pasos.map(v => `<span><i style="background:${colorMapa(v)}"></i>${v === 0 ? "0%" : pct(v, 0)}</span>`).join("");
+  $("mapaTag").textContent = `· ${MAPA_TXT[mapaModo]}${mapaModo === "1d" ? (Object.keys(VIVO).length ? " · en vivo" : " · al cierre") : ""}`;
 }
 $("mapaSeg").onclick = ev => { const b = ev.target.closest("button"); if (!b) return; mapaModo = b.dataset.v; $("mapaSeg").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); pintarMapa(); };
 if (window.ResizeObserver) { let tamM = 0; new ResizeObserver(es => { const w = Math.round(es[0].contentRect.width); if (w && w !== tamM) { tamM = w; pintarMapa(); } }).observe($("mapa")); }
 
-function pintarTodo() { pintarMapa(); pintarTercios(); pintarResumen(); pintarSmall(); pintarCed(); pintarB(CEDB, "ced", true); }
+function pintarTodo() { pintarTercios(); pintarMapa(); pintarResumen(); pintarSmall(); pintarCed(); pintarB(CEDB, "ced", true); }
 pintarTodo();
 
 // ================= cinta de precios y tiempo real =================
