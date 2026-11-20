@@ -4,8 +4,8 @@ Pedido de Francisco 19/11/2026: que en la terminal tengan la misma información 
 Mismo cálculo que seleccion_b.py, con precios de Yahoo hasta el día en que entró cada una:
 stop = precio − 1,5 ATR de 14 días (si la cartera no lo tiene), rango 3 meses = ± volatilidad diaria de 60 días × √63 (escala log).
 Magic Formula / suba 12 meses: del ranking del 09/11 (seleccion_b_2026-11-09_ampliado.csv).
-ANT (Anthropic, salió a bolsa el 19/11/2026) entró por SNDK el 20/11 a pedido de Francisco (no viene de la regla B y no tiene
-CEDEAR todavía: se cuenta como acción directa, 1:1). Con menos de 15 días de historia el stop y el rango son PROVISORIOS:
+ANT (Anthropic, salió a bolsa el 19/11/2026) entró por SNDK el 20/11 a pedido de Francisco (no viene de la regla B;
+CEDEAR ANT 14:1, ratio deducido del precio en BYMA: ANT.BA / CCL de SPY ≈ USD 6,2 por CEDEAR). Con menos de 15 días de historia el stop y el rango son PROVISORIOS:
 stop −15% y rango ± 40% (parecidos a WDC/SNDK); se recalculan solos cuando haya historia suficiente.
 Uso: python seleccion_b_extra.py   (después de cartera_tercios.py o cambio_stop.py)
 Salida: seleccion_b_extra_cedears.csv (mismas columnas que seleccion_b_cedears.csv, grupo = "reemplazo");
