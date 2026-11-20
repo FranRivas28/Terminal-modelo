@@ -233,6 +233,29 @@ if (ROT / "t27/metricas.csv").exists():
     bt2["aportes"] = ap[["cartera", "arranques", "puesto", "final_mediano", "final_malo", "final_bueno", "pierde", "caida_peor"]].to_dict(orient="records")
     datos["bt2"] = bt2
 
+# ---------- Splits (ej. SNDK 8:1 el 20/11/26): los precios de los CSV anteriores al split se pasan a la escala nueva ----------
+_px = Path(__file__).parent / "precios.json"
+SPLITS = json.loads(_px.read_text()).get("splits", {}) if _px.exists() else {}
+def ajustar(fila, dia, campos=("px", "piso", "techo", "stop")):
+    for f_split, r in SPLITS.get(fila.get("t"), []):
+        if dia and str(dia) < f_split:
+            for c in campos:
+                if isinstance(fila.get(c), (int, float)) and fila[c] == fila[c]:
+                    fila[c] = round(fila[c] / r, 4)
+for k in ("sp", "cedears"):
+    g = datos.get(k, {})
+    for x in g.get("top", []):
+        ajustar(x, g.get("fecha"))
+    b = g.get("b") or {}
+    for x in b.get("top", []) + b.get("extra", []):
+        ajustar(x, b.get("fecha"))
+for x in datos.get("tercios", {}).get("filas", []):
+    ajustar(x, x.get("desde") or datos["tercios"]["inicio"])
+    if x.get("hasta"):
+        ajustar(x, x["hasta"], ("px_venta",))
+if SPLITS:
+    print("splits:", SPLITS)
+
 (Path(__file__).parent / "datos.json").write_text(json.dumps(datos, ensure_ascii=False, default=str))
 print(json.dumps(datos["kpi"], indent=1), datos["insights"])
 
