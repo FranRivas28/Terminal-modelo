@@ -4,6 +4,9 @@ Pedido de Francisco 19/11/2026: que en la terminal tengan la misma información 
 Mismo cálculo que seleccion_b.py, con precios de Yahoo hasta el día en que entró cada una:
 stop = precio − 1,5 ATR de 14 días (si la cartera no lo tiene), rango 3 meses = ± volatilidad diaria de 60 días × √63 (escala log).
 Magic Formula / suba 12 meses: del ranking del 09/11 (seleccion_b_2026-11-09_ampliado.csv).
+ANT (Anthropic, salió a bolsa el 19/11/2026) entró por SNDK el 20/11 a pedido de Francisco (no viene de la regla B y no tiene
+CEDEAR todavía: se cuenta como acción directa, 1:1). Con menos de 15 días de historia el stop y el rango son PROVISORIOS:
+stop −15% y rango ± 40% (parecidos a WDC/SNDK); se recalculan solos cuando haya historia suficiente.
 Uso: python seleccion_b_extra.py   (después de cartera_tercios.py o cambio_stop.py)
 Salida: seleccion_b_extra_cedears.csv (mismas columnas que seleccion_b_cedears.csv, grupo = "reemplazo");
         completa el stop de las nuevas en cartera_tercios.csv
@@ -17,7 +20,8 @@ AQUI = Path(__file__).parent
 b = pd.read_csv(AQUI / "seleccion_b_cedears.csv")
 ter = pd.read_csv(AQUI / "cartera_tercios.csv")
 rk = pd.read_csv(AQUI / f"seleccion_b_{b.fecha.iloc[0]}_ampliado.csv").set_index("t")
-SECTOR = {"UNH": "Health Care", "WDC": "Information Technology"}
+SECTOR = {"UNH": "Health Care", "WDC": "Information Technology", "ANT": "Information Technology"}
+STOP_PROV, RANGO_PROV = 0.15, 0.40  # para recién salidas a bolsa (menos de 15 días de historia)
 
 
 def ohlc(t):
@@ -33,17 +37,22 @@ for k, r in ter[(ter.parte == "B") & ~ter.ticker.isin(b.ticker)].iterrows():
     f0 = r.desde if isinstance(r.desde, str) else b.fecha.iloc[0]
     d = ohlc(t); d = d[d.index < f0] if isinstance(r.desde, str) else d[d.index <= f0]  # entró durante el día: hasta el cierre anterior
     c = d.close
-    atr = pd.concat([d.high - d.low, (d.high - c.shift()).abs(), (d.low - c.shift()).abs()], axis=1).max(axis=1).rolling(14).mean().iloc[-1]
-    s3 = float(np.log(c).diff().iloc[-60:].std() * np.sqrt(63))
+    corta = len(c) < 15
+    atr = np.nan if corta else pd.concat([d.high - d.low, (d.high - c.shift()).abs(), (d.low - c.shift()).abs()], axis=1).max(axis=1).rolling(14).mean().iloc[-1]
+    s3 = RANGO_PROV if corta else float(np.log(c).diff().iloc[-60:].std() * np.sqrt(63))
     p = float(r.precio_entrada)
-    stop = float(r.stop) if pd.notna(r.stop) else round(p - 1.5 * atr, 2)
-    ter.loc[k, "stop"] = stop
-    filas.append({"fecha": f0, "revision": b.revision.iloc[0], "puesto": int(rk.n[t]), "grupo": "reemplazo", "ticker": t,
-                  "empresa": r.nombre, "sector": SECTOR.get(t, ""), "precio": p, "suba_12m": round(float(rk.imp[t]), 4),
+    stop = float(r.stop) if pd.notna(r.stop) and not corta else round(p * (1 - STOP_PROV), 2) if corta else round(p - 1.5 * atr, 2)
+    en = t in rk.index
+    if corta:
+        ter.loc[k, "stop"] = np.nan  # provisorio: se vuelve a calcular en cada corrida hasta tener 15 días
+    else:
+        ter.loc[k, "stop"] = stop
+    filas.append({"fecha": f0, "revision": b.revision.iloc[0], "puesto": int(rk.n[t]) if en else 0, "grupo": "reemplazo", "ticker": t,
+                  "empresa": r.nombre, "sector": SECTOR.get(t, ""), "precio": p, "suba_12m": round(float(rk.imp[t]), 4) if en else np.nan,
                   "peso": round(float(r.peso) * 3, 3), "stop": stop, "stop_pct": round(stop / p - 1, 4),
                   "piso_3m": round(p * np.exp(-s3), 2), "techo_3m": round(p * np.exp(s3), 2), "rango_3m_pct": round(s3 * 100, 1),
-                  "monto_diario_musd": round(float(rk.monto[t]), 1), "balance": "", "cedear": t, "ratio": r.ratio,
-                  "mf_puesto": round(float(rk.mf[t]) * 100, 1), "rend_ganancias": "", "per": round(float(rk.pe[t]), 1)})
+                  "monto_diario_musd": round(float(rk.monto[t]), 1) if en else np.nan, "balance": "", "cedear": t if r.ratio != "1:1" or t == "HPQ" else "", "ratio": r.ratio,
+                  "mf_puesto": round(float(rk.mf[t]) * 100, 1) if en else np.nan, "rend_ganancias": "", "per": round(float(rk.pe[t]), 1) if en else np.nan})
 pd.DataFrame(filas, columns=b.columns).to_csv(AQUI / "seleccion_b_extra_cedears.csv", index=False)
 ter.to_csv(AQUI / "cartera_tercios.csv", index=False)
 print(pd.DataFrame(filas)[["ticker", "fecha", "precio", "stop", "piso_3m", "techo_3m", "mf_puesto", "per"]].to_string(index=False))
