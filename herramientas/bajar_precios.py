@@ -17,13 +17,20 @@ tickers = sorted(set([x["t"] for x in d["sp"]["top"]] + [p["ticker"] for p in d[
                      + [o["t"] for o in d["operaciones"][:30]] + ["SPY", "IWM", "QQQ"]))
 
 
+SPLITS = {}
+
+
 def bajar(t):
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{t.replace('.', '-')}?range=6mo&interval=1d"
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{t.replace('.', '-')}?range=6mo&interval=1d&events=splits"
     for intento in range(3):  # Yahoo a veces falla una vez: se reintenta
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             r = json.loads(urllib.request.urlopen(req, timeout=20).read())["chart"]["result"][0]
             fechas = [datetime.fromtimestamp(s, timezone.utc).date().isoformat() for s in r["timestamp"]]
+            # splits (ej. SNDK 8:1 el 20/11/26): Yahoo ya ajusta los cierres; datos_dashboard.py ajusta con esto los precios de los CSV
+            sp = [[datetime.fromtimestamp(x["date"], timezone.utc).date().isoformat(), x["numerator"] / x["denominator"]]
+                  for x in (r.get("events") or {}).get("splits", {}).values() if x.get("denominator")]
+            SPLITS.update({t: sorted(sp)} if sp else {})
             return t, dict(zip(fechas, r["indicators"]["adjclose"][0]["adjclose"]))
         except Exception:
             pass
@@ -33,9 +40,9 @@ def bajar(t):
 with ThreadPoolExecutor(8) as ex:
     series = dict(ex.map(bajar, tickers))
 fechas = sorted({f for s in series.values() for f in s})
-out = {"fechas": fechas, "cierres": {}}
+out = {"fechas": fechas, "cierres": {}, "splits": SPLITS}
 for t, s in series.items():
-    if sum(v is not None for v in s.values()) > 20:
+    if sum(v is not None for v in s.values()) >= 2:  # aunque tenga poca historia (recién salida a bolsa) se muestra el precio
         out["cierres"][t] = [None if s.get(f) is None else round(float(s[f]), 2) for f in fechas]
 # último y anterior cierre de todas (aunque Yahoo traiga poca historia): cambio de hoy del mapa de calor
 out["ultimos"] = {t: [round(float(v), 2) for v in [s[f] for f in sorted(s) if s[f] is not None][-2:]]
