@@ -1193,10 +1193,11 @@ function pintarTodo() { pintarTercios(); pintarMapa(); pintarResumen(); pintarSm
 pintarTodo();
 
 // ================= cinta de precios y tiempo real =================
-const RELOJ = [...new Set(["SPY", "QQQ", "IWM", ...SMALL.map(e => e.t), ...SPL.map(e => e.t), ...CED.map(e => e.t), ...SPB.map(e => e.t), ...CEDB.map(e => e.t)])];
+const EXTRA_VIVAS = CEDB_EXTRA.filter(e => !(D.tercios?.filas || []).some(x => x.t === e.t && x.hasta)); // de la cartera 1/3 fuera de la lista B y no vendidas (WDC, ANT): sin esto no tenían precio en vivo
+const RELOJ = [...new Set(["SPY", "QQQ", "IWM", ...SMALL.map(e => e.t), ...SPL.map(e => e.t), ...CED.map(e => e.t), ...SPB.map(e => e.t), ...CEDB.map(e => e.t), ...EXTRA_VIVAS.map(e => e.t)])];
 const ultimo = t => { const c = PX.cierres[t]; if (!c) return null; const v = c.filter(x => x != null); return { p: v[v.length - 1], pc: v[v.length - 2] }; };
 const cot = t => VIVO[t] || ultimo(t);
-const GRUPO_T = {}; [...CEDB, ...SPB].forEach(e => { GRUPO_T[e.t] = "B"; }); CED.forEach(e => { GRUPO_T[e.t] = "CEDEAR"; }); SPL.forEach(e => { GRUPO_T[e.t] = "S&P"; }); SMALL.forEach(e => { GRUPO_T[e.t] = "SMALL"; });
+const GRUPO_T = {}; [...CEDB, ...EXTRA_VIVAS, ...SPB].forEach(e => { GRUPO_T[e.t] = "B"; }); CED.forEach(e => { GRUPO_T[e.t] = "CEDEAR"; }); SPL.forEach(e => { GRUPO_T[e.t] = "S&P"; }); SMALL.forEach(e => { GRUPO_T[e.t] = "SMALL"; });
 function dibujaTape(cambiados = []) {
   const caja = $("tape");
   if (!caja.querySelector(".rail")) { // la lista va dos veces seguidas: al llegar a la mitad vuelve a empezar sin salto
